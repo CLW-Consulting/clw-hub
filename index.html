@@ -1,0 +1,2132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLW — Command Centre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#006caa;--blue-d:#005a8e;--blue-p:#dceef8;--blue-pp:#f0f7fc;--blue-mid:#cce6f5;
+  --grey:#dadada;--grey-m:#a0a8ae;--grey-d:#6b7580;--grey-lt:#f5f5f5;
+  --black:#282828;--char-lt:#555555;--white:#fff;--off:#f7f8f9;--bdr:#e4e8eb;
+  --green:#1a7a4a;--green-bg:#e8f5ef;--green-light:#c8ead8;
+  --amber:#c47a00;--amber-bg:#fef6e6;--amber-light:#fde8b0;
+  --red:#c0392b;--red-bg:#fdecea;--red-light:#f9c9c4;
+  --purple:#6b4c8a;--purple-bg:#f3eff8;
+  --fc-forecast:#dceef8;--fc-forecast-t:#006caa;
+  --fc-issued:#fff3cd;--fc-issued-t:#856404;
+  --fc-paid:#c8ead8;--fc-paid-t:#1a7a4a;
+  --fc-overdue:#f9c9c4;--fc-overdue-t:#c0392b;
+  --f:'Barlow','Segoe UI',sans-serif;
+  --fc:'Barlow Condensed',sans-serif;
+  --r:3px;--rl:4px;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04);
+  --shl:0 4px 20px rgba(0,0,0,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--off);color:var(--black);font-family:var(--f);font-size:13px;line-height:1.55;min-height:100vh}
+
+/* ── LOAD SCREEN ── */
+#ls{position:fixed;inset:0;background:var(--blue);display:flex;align-items:center;justify-content:center;z-index:9998}
+#ls.hidden{display:none}
+.lcard{background:var(--white);border-radius:var(--rl);padding:44px 48px;width:480px;max-width:95vw;box-shadow:var(--shl)}
+.clw-mark{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.clw-box{width:52px;height:52px;background:var(--blue);display:flex;align-items:center;justify-content:center;border-radius:2px;flex-shrink:0}
+.clw-box span{color:white;font-family:var(--fc);font-size:20px;font-weight:700}
+.clw-wds .l1{font-size:11px;font-weight:600;color:var(--blue);letter-spacing:.06em;line-height:1.4}
+.ltitle{font-size:17px;font-weight:700;color:var(--black);margin-bottom:6px}
+.ldesc{font-size:12px;color:var(--grey-d);margin-bottom:22px;line-height:1.7}
+.dz{border:2px dashed var(--bdr);border-radius:var(--rl);padding:28px 20px;margin-bottom:12px;cursor:pointer;transition:all .2s;background:var(--blue-pp);text-align:center;border-color:var(--blue-p)}
+.dz:hover,.dz.over{border-color:var(--blue);background:var(--blue-p)}
+.or{display:flex;align-items:center;gap:10px;font-size:10px;color:var(--grey-m);font-weight:600;letter-spacing:.1em;margin-bottom:12px}
+.or::before,.or::after{content:'';flex:1;height:1px;background:var(--bdr)}
+.lnote{font-size:10px;color:var(--grey-m);margin-top:10px;line-height:1.6;text-align:center}
+.ls-spin{width:34px;height:34px;border:3px solid var(--bdr);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SHELL ── */
+.shell{display:flex;height:100vh;overflow:hidden}
+.sb{width:220px;min-width:220px;background:var(--blue);display:flex;flex-direction:column;overflow-y:auto}
+.sb-logo{padding:16px 16px 12px;border-bottom:1px solid rgba(255,255,255,.15)}
+.sb-lm{display:flex;align-items:center;gap:9px}
+.sb-box{width:36px;height:36px;background:white;display:flex;align-items:center;justify-content:center;border-radius:2px;flex-shrink:0}
+.sb-box span{color:var(--blue);font-family:var(--fc);font-size:13px;font-weight:700}
+.sb-wds .w1{font-size:9px;font-weight:600;color:rgba(255,255,255,.9);letter-spacing:.12em;text-transform:uppercase;line-height:1.4}
+.sb-wds .w2{font-size:8px;color:rgba(255,255,255,.5);letter-spacing:.1em;text-transform:uppercase}
+.nsec{padding:8px 0 2px}
+.nlbl{font-size:8px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.3);padding:0 14px 4px}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;color:rgba(255,255,255,.62);font-size:12px;transition:all .15s;border-left:3px solid transparent}
+.ni:hover{background:rgba(255,255,255,.08);color:white}
+.ni.active{background:rgba(255,255,255,.12);color:white;border-left-color:white;font-weight:600}
+.nic{font-size:11px;width:14px;text-align:center;opacity:.7}
+.sbf{margin-top:auto;padding:10px 14px;border-top:1px solid rgba(255,255,255,.12)}
+.fst{font-size:10px;color:rgba(255,255,255,.5);margin-bottom:7px;line-height:1.5}
+.fst .fn{color:rgba(255,255,255,.8);font-weight:600}
+.udot{width:6px;height:6px;border-radius:50%;background:#ffd700;display:inline-block;margin-right:3px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* ── MAIN ── */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.pg{display:none;flex:1;overflow:hidden;flex-direction:column}
+.pg.active{display:flex}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:14px 22px 12px;gap:12px;border-bottom:1px solid var(--bdr);flex-shrink:0;background:var(--white)}
+.pt{font-size:17px;font-weight:700;color:var(--black);letter-spacing:-.02em}
+.ps{font-size:10px;color:var(--grey-d);margin-top:1px}
+.page-scroll{flex:1;overflow-y:auto;padding:18px 22px}
+.dash-scroll{flex:1;overflow-y:auto;padding:18px 22px}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--r);font-family:var(--f);font-size:11px;font-weight:600;letter-spacing:.03em;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--blue);color:white}.btn-p:hover{background:var(--blue-d)}
+.btn-s{background:var(--white);color:var(--black);border:1px solid var(--bdr)}.btn-s:hover{border-color:var(--blue);color:var(--blue)}
+.btn-d{background:white;color:var(--red);border:1px solid #f5c6c2}.btn-d:hover{background:var(--red);color:white}
+.btn-sm{padding:3px 8px;font-size:10px}
+.btn-xs{padding:2px 6px;font-size:9px}
+
+/* ── STATS ── */
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.sc{background:var(--white);border:1px solid var(--bdr);border-radius:var(--rl);padding:12px 14px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.sc.cb::before{background:var(--blue)}.sc.cg::before{background:var(--green)}
+.sc.ca::before{background:var(--amber)}.sc.cr::before{background:var(--red)}.sc.cm::before{background:var(--grey-m)}
+.slbl{font-size:8px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--grey-d);margin-bottom:4px}
+.sval{font-size:20px;font-weight:700;color:var(--black);letter-spacing:-.02em;line-height:1}
+.ssub{font-size:10px;color:var(--grey-d);margin-top:3px}
+
+/* ── CARD ── */
+.card{background:var(--white);border:1px solid var(--bdr);border-radius:var(--rl);box-shadow:var(--sh);margin-bottom:12px;overflow:hidden}
+.ch{padding:10px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;gap:9px}
+.ct{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--black);display:flex;align-items:center;gap:7px}
+.badge{font-size:9px;font-weight:600;padding:2px 7px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase}
+.bb2{background:var(--blue-p);color:var(--blue)}.ba{background:var(--amber-bg);color:var(--amber)}
+
+/* ── FORECAST TABLE ── */
+.fc-toolbar{display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid var(--bdr);background:var(--white);flex-shrink:0;flex-wrap:wrap}
+.fsel{background:var(--white);border:1px solid var(--bdr);border-radius:var(--r);padding:4px 8px;color:var(--black);font-family:var(--f);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;outline:none;cursor:pointer}
+.fsel:focus{border-color:var(--blue)}
+.fsrch{background:var(--white);border:1px solid var(--bdr);border-radius:var(--r);padding:4px 10px;color:var(--black);font-family:var(--f);font-size:11px;outline:none;width:150px}
+.fsrch:focus{border-color:var(--blue)}
+.tb-sep{width:1px;height:20px;background:var(--bdr);flex-shrink:0}
+.legend{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--grey-d);font-weight:500}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.fc-scroll{flex:1;overflow:auto;position:relative}
+.fc-table{border-collapse:collapse;font-size:11.5px;min-width:max-content;width:100%}
+.fc-table th{position:sticky;top:0;z-index:10;background:var(--white);border-bottom:2px solid var(--bdr);padding:7px 10px;font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--grey-d);white-space:nowrap}
+.fc-table th.col-name{position:sticky;top:0;left:0;z-index:20;background:var(--white);min-width:200px;max-width:230px}
+.fc-table th.col-mgr{position:sticky;top:0;left:200px;z-index:20;background:var(--white);min-width:74px}
+.fc-table th.col-st{position:sticky;top:0;left:274px;z-index:20;background:var(--white);min-width:52px}
+.fc-table th.col-total{text-align:right;min-width:80px}
+.fc-table th.col-m{text-align:center;min-width:66px;cursor:pointer;user-select:none}
+.fc-table th.col-cur{background:var(--blue-pp)!important;color:var(--blue)!important;border-bottom:2px solid var(--blue)!important}
+.fc-table td{padding:6px 10px;border-bottom:1px solid #f0f2f4;vertical-align:middle}
+.fc-table td.col-name{position:sticky;left:0;z-index:5;background:inherit;min-width:200px;max-width:230px;font-weight:600;color:var(--black);font-size:12px}
+.fc-table td.col-mgr{position:sticky;left:200px;z-index:5;background:inherit}
+.fc-table td.col-st{position:sticky;left:274px;z-index:5;background:inherit}
+.fc-table td.col-total{text-align:right;font-family:'Courier New',monospace;font-weight:700;color:var(--blue);font-size:11px}
+.fc-table td.col-m{text-align:center;padding:4px 3px}
+.fc-table td.col-cur{background:#f5fafd}
+.fc-table tr:hover td{background:var(--blue-pp)}
+.fc-table tr:hover td.col-cur{background:#eaf4fb}
+.fc-table tr.row-hold{opacity:.52}
+.fc-table tr.row-section td{background:var(--off);font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--grey-d);padding:8px 10px;cursor:pointer}
+.fc-table tr.row-total td{background:var(--off);border-top:2px solid var(--bdr);font-weight:700}
+.inv-cell{display:inline-flex;align-items:center;justify-content:center;min-width:60px;height:24px;border-radius:var(--r);font-family:'Courier New',monospace;font-size:10px;font-weight:600;cursor:pointer;transition:all .12s;position:relative;user-select:none;white-space:nowrap}
+.inv-cell.empty{color:var(--grey);background:transparent;border:1px dashed transparent}
+.inv-cell.empty:hover{border-color:var(--grey);background:var(--off)}
+.inv-cell.forecast{background:var(--fc-forecast);color:var(--fc-forecast-t);border:1px solid #b8d8ee}
+.inv-cell.issued{background:var(--fc-issued);color:var(--fc-issued-t);border:2px solid #e6c200;font-weight:700}
+.inv-cell.overdue{background:var(--fc-overdue);color:var(--fc-overdue-t);border:2px solid #e07060;font-weight:700}
+.inv-cell.paid{background:var(--fc-paid);color:var(--fc-paid-t);border:1px solid #8ccca8;font-weight:600}
+.inv-cell.issued::after,.inv-cell.paid::after{content:'✓';position:absolute;top:-4px;right:-4px;font-size:8px;border-radius:50%;width:11px;height:11px;display:flex;align-items:center;justify-content:center;font-weight:700;line-height:1}
+.inv-cell.issued::after{background:var(--amber);color:white}
+.inv-cell.paid::after{background:var(--green);color:white}
+td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
+.inv-cell.dragging{opacity:.4;cursor:grabbing}
+.tot-cell{display:inline-block;min-width:60px;text-align:center;font-family:'Courier New',monospace;font-size:10px;font-weight:700;padding:2px 4px;border-radius:var(--r)}
+.tot-cell.tc-green{background:var(--green-bg);color:var(--green)}
+.tot-cell.tc-amber{background:var(--amber-bg);color:var(--amber)}
+.tot-cell.tc-red{background:var(--red-bg);color:var(--red)}
+.stgl{display:inline-flex;border:1px solid var(--bdr);border-radius:20px;overflow:hidden;font-family:var(--f);font-size:8px;font-weight:700;text-transform:uppercase}
+.stgl span{padding:2px 6px;cursor:pointer;transition:all .12s;color:var(--grey-m);user-select:none}
+.stgl span:hover{background:var(--off)}
+.stgl span.on-live{background:var(--green-bg);color:var(--green)}
+.stgl span.on-hold{background:#f0f2f4;color:var(--grey-d)}
+.stgl span.on-complete{background:#e8eaec;color:var(--grey-m)}
+.fee-summary{margin-top:4px;display:flex;flex-direction:column;gap:2px}
+.fee-row{display:flex;justify-content:space-between;align-items:center;font-size:9px;font-family:'Courier New',monospace;line-height:1.3}
+.fee-row .fee-lbl{font-family:var(--f);font-size:9px;color:var(--grey-d);font-weight:500}
+.fee-row .fee-amt{font-weight:700;font-size:9px}
+.fee-row.r-agreed .fee-amt{color:var(--grey-d)}
+.fee-row.r-invoiced .fee-amt{color:var(--blue)}
+.fee-row.r-remain .fee-amt{color:var(--green)}
+.fee-row.r-remain-neg .fee-amt{color:var(--red)}
+.fee-divider{height:1px;background:var(--bdr);margin:2px 0}
+.mp{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500}
+.md{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* ── CONTEXT MENU ── */
+.ctx-menu{position:fixed;background:var(--white);border:1px solid var(--bdr);border-radius:var(--rl);box-shadow:var(--shl);z-index:2000;min-width:178px;overflow:hidden}
+.ctx-item{padding:7px 13px;font-size:11.5px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--black);transition:background .1s}
+.ctx-item:hover{background:var(--blue-p)}
+.ctx-item.ctx-sep{border-top:1px solid var(--bdr);margin-top:2px;padding-top:9px}
+.ctx-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* ── MINI CHART ── */
+.cw{padding:14px 16px;overflow-x:auto}
+.cbars{display:flex;gap:4px;align-items:flex-end;padding-bottom:28px;min-width:max-content;position:relative;height:150px}
+.bg3{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:28px}
+.bv{font-size:7px;color:var(--grey-d);margin-bottom:2px;white-space:nowrap;font-weight:500}
+.b{width:22px;border-radius:2px 2px 0 0;cursor:pointer;transition:opacity .15s}
+.b:hover{opacity:.75}
+.bl{font-size:7px;color:var(--grey-d);transform:rotate(-40deg);white-space:nowrap;transform-origin:center top;margin-top:4px;font-weight:500}
+.yr-sep{align-self:flex-end;padding-bottom:28px;font-size:8px;font-weight:700;color:var(--blue);letter-spacing:.04em;border-left:1px dashed var(--bdr);padding-left:3px;margin-left:2px;white-space:nowrap}
+.tl{position:absolute;left:0;right:0;border-top:1px dashed var(--grey-m);pointer-events:none}
+.tll{position:absolute;right:0;font-size:7px;color:var(--grey-m);transform:translateY(-100%);padding-right:4px;font-weight:600}
+
+/* ── SCORECARD ── */
+.scgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:12px}
+.pc{background:var(--off);border:1px solid var(--bdr);border-radius:var(--rl);overflow:hidden}
+.ph2{padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+.pn{font-size:13px;font-weight:700;color:white}
+.pb2{padding:12px 14px}
+.pr{margin-bottom:8px}
+.pm{display:flex;justify-content:space-between;font-size:10px;color:var(--grey-d);margin-bottom:3px;font-weight:500}
+.pm .val{color:var(--black);font-weight:700}
+.pbg{height:4px;background:var(--bdr);border-radius:10px;overflow:hidden}
+.pf{height:100%;border-radius:10px;transition:width .5s}
+.wg{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:6px}
+.wc{display:flex;flex-direction:column;gap:2px}
+.wl{font-size:7px;font-weight:600;color:var(--grey-d);letter-spacing:.04em;text-transform:uppercase}
+.wi{background:var(--white);border:1px solid var(--bdr);border-radius:var(--r);padding:3px 4px;color:var(--black);font-family:'Courier New',monospace;font-size:10px;outline:none;width:100%;text-align:right}
+.wi:focus{border-color:var(--blue)}
+
+/* ── PIPELINE PAGE ── */
+.spill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.s-pipe{background:var(--amber-bg);color:var(--amber)}
+.bp{font-size:9px;padding:3px 7px;background:var(--amber-bg);border:1px solid #f0c060;color:var(--amber);border-radius:var(--r);cursor:pointer;font-family:var(--f);font-weight:700;text-transform:uppercase}
+.bp:hover{background:var(--amber);color:white}
+
+/* ── L10 TRACKER ── */
+.l10-body{flex:1;overflow-y:auto;padding:18px 22px 60px}
+.week-nav-bar{background:var(--white);border-bottom:1px solid var(--bdr);padding:8px 22px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.wnav-btn{background:var(--white);border:1.5px solid var(--bdr);color:var(--char-lt);width:26px;height:26px;border-radius:2px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .12s;font-family:var(--f)}
+.wnav-btn:hover{border-color:var(--blue);color:var(--blue)}
+.week-label{font-family:var(--fc);font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--black);min-width:260px;text-align:center}
+.last-saved-l10{margin-left:auto;font-size:10px;color:var(--grey-m)}
+.l10-sec-hd{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.l10-sec-title{font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--blue);white-space:nowrap}
+.l10-sec-count{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-m)}
+.l10-sec-line{flex:1;height:1px;background:var(--bdr)}
+.l10-metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bdr);border:1px solid var(--bdr);border-radius:3px;overflow:hidden;margin-bottom:18px}
+.m-card{background:var(--white);padding:12px 14px;position:relative;overflow:hidden}
+.m-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .2s ease}
+.m-card:hover::after{transform:scaleX(1)}
+.m-label{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--grey-m);margin-bottom:4px}
+.m-val{font-family:var(--fc);font-size:26px;font-weight:700;color:var(--black);line-height:1;cursor:text;padding:2px 3px;border-radius:2px;display:inline-block;min-width:50px;transition:background .1s}
+.m-val:focus{outline:none;background:var(--blue-p)}
+.m-val.mblue{color:var(--blue)}.m-val.mred{color:var(--red)}.m-val.mgreen{color:var(--green)}
+.m-sub{font-size:10px;color:var(--grey-m);margin-top:1px}
+.tbl-wrap{background:var(--white);border:1px solid var(--bdr);border-radius:3px;overflow:hidden;box-shadow:var(--sh);margin-bottom:18px}
+.l10-table{width:100%;border-collapse:collapse}
+.l10-table thead th{padding:8px 11px;font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--white);background:var(--blue);text-align:left;white-space:nowrap}
+.l10-table thead th:nth-child(1){width:160px}
+.l10-table thead th:nth-child(2){width:100px}
+.l10-table thead th:nth-child(3){width:80px}
+.l10-table thead th:nth-child(4){min-width:280px;width:auto}
+.l10-table tbody tr{border-bottom:1px solid var(--bdr);transition:background .1s}
+.l10-table tbody tr:hover{background:var(--blue-pp)}
+.l10-table tbody tr:last-child{border-bottom:none}
+.l10-table td{padding:8px 11px;vertical-align:top}
+.proj-name-l10{font-family:var(--fc);font-size:15px;font-weight:700;letter-spacing:.03em;color:var(--black);line-height:1.2}
+.row-btns-l10{display:flex;gap:6px;margin-top:3px}
+.row-btn-l10{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:none;border:none;cursor:pointer;font-family:var(--f);color:var(--grey-m);padding:0;transition:color .1s}
+.row-btn-l10:hover{color:var(--blue)}.row-btn-l10.del:hover{color:var(--red)}
+.fb-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:2px;font-family:var(--fc);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border:1.5px solid transparent;transition:all .12s;user-select:none}
+.fb-badge:hover{filter:brightness(.94);transform:translateY(-1px)}
+.fb-nr{background:#f4f4f4;color:var(--grey-m);border-color:var(--bdr)}
+.fb-pd{background:#fff5e6;color:var(--amber);border-color:#f5cc7a}
+.fb-rc{background:#e8f5ee;color:var(--green);border-color:#a8d9bb}
+.fb-hd{background:#fdf0ee;color:var(--red);border-color:#f0b0a8}
+.owner-tag{font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--white);background:var(--blue);padding:2px 8px;border-radius:2px;display:inline-block}
+.a-list{list-style:none;display:flex;flex-direction:column;gap:3px}
+.a-item{display:flex;align-items:flex-start;gap:6px;font-size:11.5px;color:var(--black);line-height:1.4}
+.a-check{width:13px;height:13px;flex-shrink:0;margin-top:2px;accent-color:var(--blue);cursor:pointer}
+.a-text{flex:1;cursor:text;padding:1px 3px;border-radius:2px;min-height:17px;transition:background .1s}
+.a-text:hover{background:var(--blue-p)}
+.a-text[contenteditable="true"]{outline:none;background:var(--blue-p);border-bottom:1.5px solid var(--blue)}
+.a-text.done{text-decoration:line-through;opacity:.38}
+.add-a-btn{margin-top:4px;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--grey-m);background:none;border:none;cursor:pointer;padding:1px 0;font-family:var(--fc);transition:color .1s}
+.add-a-btn:hover{color:var(--blue)}
+.bw-field,.notes-field{font-size:11px;cursor:text;padding:2px 4px;border-radius:2px;min-height:17px;transition:background .1s;line-height:1.4}
+.bw-field{color:var(--char-lt)}
+.notes-field{color:var(--grey-m);font-style:italic}
+.bw-field:hover,.notes-field:hover{background:var(--blue-p)}
+.bw-field[contenteditable="true"],.notes-field[contenteditable="true"]{outline:none;background:var(--blue-p);border-bottom:1.5px solid var(--blue);color:var(--black);font-style:normal}
+.pipe-grid-l10{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pipe-item-l10{background:var(--white);border:1.5px solid var(--bdr);border-radius:3px;padding:10px 12px;display:flex;align-items:flex-start;gap:9px;cursor:pointer;transition:all .13s}
+.pipe-item-l10:hover{border-color:var(--blue);box-shadow:0 2px 6px rgba(0,108,170,.1)}
+.pipe-dot-l10{width:7px;height:7px;border-radius:50%;background:var(--blue);flex-shrink:0;margin-top:4px}
+.pipe-name-l10{font-family:var(--fc);font-size:13px;font-weight:700;letter-spacing:.04em;color:var(--black);line-height:1.2}
+.pipe-notes-l10{font-size:10px;color:var(--grey-m);margin-top:2px;line-height:1.3}
+.pipe-add-l10{border-style:dashed;border-color:var(--grey-m);opacity:.55}
+.pipe-add-l10:hover{opacity:1;border-color:var(--blue)}
+.saved-ind{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);opacity:0;transition:opacity .3s}
+.saved-ind.show{opacity:1}
+
+
+/* ── ACTION CHIPS / DRAG FIXES ── */
+.action-tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.action-chip{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--bdr);background:white;border-radius:20px;padding:2px 7px;cursor:pointer;color:var(--grey-d);font-family:var(--f)}
+.action-chip:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-pp)}
+.inv-cell{touch-action:none}
+.inv-cell.selected{outline:2px solid var(--purple);outline-offset:1px}
+.pipe-age{font-size:9px;font-weight:700;margin-top:2px}
+
+/* ── MODALS ── */
+.mo{position:fixed;inset:0;background:rgba(40,40,40,.45);backdrop-filter:blur(2px);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.mo.open{opacity:1;pointer-events:all}
+.modal{background:var(--white);border-radius:var(--rl);width:620px;max-width:96vw;max-height:90vh;overflow-y:auto;transform:translateY(8px);transition:transform .2s;box-shadow:var(--shl)}
+.mo.open .modal{transform:translateY(0)}
+.mh{padding:13px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.mt{font-size:15px;font-weight:700;color:var(--black)}
+.mcl{background:none;border:none;color:var(--grey-m);cursor:pointer;font-size:18px;padding:3px;border-radius:3px;line-height:1}
+.mcl:hover{color:var(--black);background:var(--off)}
+.mb{padding:15px 18px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ff{grid-column:1/-1}
+.fgr{display:flex;flex-direction:column;gap:3px}
+.fl{font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--grey-d)}
+.fi,.fs,.fta{background:var(--off);border:1px solid var(--bdr);border-radius:var(--r);padding:7px 10px;color:var(--black);font-family:var(--f);font-size:12px;outline:none;width:100%;transition:border-color .15s}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--blue)}
+.fta{resize:vertical;min-height:60px}
+.fee-box{background:var(--off);border:1px solid var(--bdr);border-radius:var(--r);padding:12px;margin-top:7px}
+.fee-tit{font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--grey-d);margin-bottom:8px}
+.fee-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.fee-it{display:flex;flex-direction:column;gap:2px}
+.fee-lb{font-size:8px;color:var(--grey-d);font-weight:600}
+.fee-in{background:var(--white);border:1px solid var(--bdr);border-radius:var(--r);padding:4px 6px;color:var(--black);font-family:'Courier New',monospace;font-size:11px;outline:none;width:100%}
+.fee-in:focus{border-color:var(--blue)}
+
+/* ── REPORT ── */
+#report-content{background:var(--grey-lt);border:1px solid var(--bdr);border-radius:3px;padding:14px;font-size:11px;line-height:1.7;white-space:pre-wrap;font-family:var(--f);color:var(--black);max-height:50vh;overflow-y:auto}
+
+/* ── MISC ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--black);color:white;border-radius:var(--r);padding:10px 16px;font-size:11px;font-weight:600;z-index:9999;transform:translateY(60px);opacity:0;transition:all .25s;display:flex;align-items:center;gap:6px;box-shadow:var(--shl)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.err{background:var(--red)}.toast.ok{background:var(--green)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--grey);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ══ LOAD SCREEN ══ -->
+<div id="ls">
+  <div class="lcard" style="text-align:center">
+    <div class="clw-mark" style="justify-content:center;margin-bottom:20px">
+      <div class="clw-box"><span>CLW</span></div>
+      <div class="clw-wds"><div class="l1">CSSW LONDON</div><div class="l1">WATERPROOFING</div></div>
+    </div>
+    <div class="ltitle" style="margin-bottom:4px">CLW Command Centre</div>
+    <div class="ldesc" style="margin-bottom:20px">Enter your access password to continue</div>
+    <input id="pw-input" type="password" placeholder="Password"
+      autocomplete="current-password"
+      style="width:100%;padding:11px 14px;border:1.5px solid var(--bdr);border-radius:var(--r);font-family:var(--f);font-size:14px;outline:none;margin-bottom:8px;transition:border-color .15s;text-align:center;letter-spacing:.1em"
+      onkeydown="if(event.key==='Enter')checkPassword()"
+      oninput="document.getElementById('pw-err').style.display='none'"
+      onfocus="this.style.borderColor='var(--blue)'"
+      onblur="this.style.borderColor='var(--bdr)'">
+    <div id="pw-err" style="display:none;color:var(--red);font-size:11px;font-weight:600;margin-bottom:8px">Incorrect password — try again</div>
+    <button class="btn btn-p" style="width:100%;justify-content:center;padding:11px;font-size:12px" onclick="checkPassword()">
+      Enter →
+    </button>
+    <div class="lnote" style="margin-top:14px">CLW · CSSW London Waterproofing · Internal use only</div>
+  </div>
+</div>
+
+<!-- ══ APP SHELL ══ -->
+<div class="shell" id="app" style="display:none">
+  <aside class="sb">
+    <div class="sb-logo">
+      <div class="sb-lm">
+        <div class="sb-box"><span>CLW</span></div>
+        <div class="sb-wds"><div class="w1">CSSW London</div><div class="w2">Waterproofing</div></div>
+      </div>
+    </div>
+    <nav class="nsec">
+      <div class="nlbl">Overview</div>
+      <div class="ni active" onclick="nav('dashboard')"><span class="nic">◈</span> Dashboard</div>
+    </nav>
+    <nav class="nsec">
+      <div class="nlbl">Weekly</div>
+      <div class="ni" onclick="nav('l10')"><span class="nic">◉</span> L10 Tracker</div>
+    </nav>
+    <nav class="nsec">
+      <div class="nlbl">Projects</div>
+      <div class="ni" onclick="nav('projects')"><span class="nic">▦</span> Projects &amp; Forecast</div>
+      <div class="ni" onclick="nav('pipeline')"><span class="nic">◎</span> Pipeline</div>
+    </nav>
+    <nav class="nsec">
+      <div class="nlbl">Team</div>
+      <div class="ni" onclick="nav('scorecard')"><span class="nic">◐</span> Scorecard</div>
+      <div class="ni" onclick="nav('wheels')"><span class="nic">◎</span> Success Wheels</div>
+    </nav>
+    <div class="sbf">
+      <div class="fst" id="fstatus">No file loaded</div>
+      <button class="btn btn-sm" style="background:white;color:var(--blue);width:100%;justify-content:center;margin-bottom:4px;font-weight:700;font-size:10px" onclick="saveAll()">↓ Save All Data</button>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);border:none;width:100%;justify-content:center;font-size:9px" onclick="document.getElementById('rpick').click()">↑ Load file</button>
+      <input type="file" id="rpick" accept=".json" style="display:none" onchange="loadForecastFile(this.files[0])">
+      <div style="margin-top:8px;border-top:1px solid rgba(255,255,255,.12);padding-top:8px">
+        <button id="drive-btn" class="btn btn-sm" style="background:var(--amber);color:white;width:100%;justify-content:center;font-weight:700;font-size:10px;cursor:default">◌ Connecting…</button>
+        <div id="drive-status" style="font-size:9px;color:rgba(255,255,255,.4);text-align:center;margin-top:4px">Initialising sync</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div class="pg active" id="page-dashboard">
+      <div class="ph">
+        <div><div class="pt">Dashboard</div><div class="ps" id="dash-date"></div></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-s btn-sm" onclick="nav('l10')">L10 Tracker →</button>
+          <button class="btn btn-p btn-sm" onclick="saveAll()">↓ Save</button>
+        </div>
+      </div>
+      <div class="dash-scroll">
+        <div class="sg" id="stat-grid"></div>
+        <!-- Fee Performance — auto from Scorecard + Forecast -->
+        <div class="card" style="margin-bottom:12px">
+          <div class="ch"><div class="ct">Fee Performance — Auto-calculated</div><div style="font-size:10px;color:var(--grey-d)" id="dash-qtr-label"></div></div>
+          <div class="l10-metrics-grid" id="dash-l10-metrics" style="border:none;border-radius:0;margin:0"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 260px;gap:12px;margin-bottom:12px">
+          <div class="card"><div class="ch"><div class="ct">This Month — Invoices</div></div><div id="this-month"></div></div>
+          <div class="card"><div class="ch"><div class="ct">Next Month — Invoices</div></div><div id="next-month"></div></div>
+          <div class="card">
+            <div class="ch"><div class="ct">Monthly Invoicing</div><div style="font-size:9px;color:var(--grey-d)">Per month + Qtr avg</div></div>
+            <div id="monthly-invoicing" style="max-height:300px;overflow-y:auto"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ct">Fee Forecast — 6 Past + 12 Future Months</div><div style="font-size:9px;color:var(--grey-m)">Grey = past · Coloured = future</div></div>
+          <div class="cw" id="dash-chart"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ L10 TRACKER ══ -->
+    <div class="pg" id="page-l10">
+      <div class="ph">
+        <div><div class="pt">L10 — Weekly Leadership Tracker</div><div class="ps">Move week by week, manage actions and feedback tracking</div></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="saved-ind" id="l10-saved-ind">✓ Saved</span>
+          <button class="btn btn-s btn-sm" onclick="openAddL10Project()">+ Add Project</button>
+          <button class="btn btn-s btn-sm" onclick="openL10Report()">Export Report</button>
+          <button class="btn btn-p btn-sm" onclick="saveAll()">↓ Save</button>
+        </div>
+      </div>
+      <div class="week-nav-bar">
+        <button class="wnav-btn" onclick="changeWeek(-1)">‹</button>
+        <div class="week-label" id="week-label">—</div>
+        <button class="wnav-btn" onclick="changeWeek(1)">›</button>
+        <button class="btn btn-sm btn-s" style="margin-left:6px" onclick="jumpToToday()">This Week</button>
+        <span class="last-saved-l10" id="last-saved-l10">Not yet saved</span>
+      </div>
+      <div class="l10-body">
+        <div class="l10-sec-hd"><div class="l10-sec-title">Fee Performance</div><div class="l10-sec-line"></div></div>
+        <div class="l10-metrics-grid" id="l10-metrics-grid"></div>
+        <div class="l10-sec-hd"><div class="l10-sec-title">Live Jobs</div><div class="l10-sec-count" id="l10-live-count"></div><div class="l10-sec-line"></div></div>
+        <div class="tbl-wrap">
+          <table class="l10-table">
+            <thead><tr><th>Project · Billing</th><th>Feedback</th><th>Owner</th><th>Actions / To Do</th></tr></thead>
+            <tbody id="l10-tbody"></tbody>
+          </table>
+        </div>
+        <div class="l10-sec-hd"><div class="l10-sec-title">Pipeline</div><div class="l10-sec-count" id="l10-pipe-count"></div><div class="l10-sec-line"></div></div>
+        <div class="pipe-grid-l10" id="l10-pipe-grid"></div>
+      </div>
+    </div>
+
+    <!-- ══ PROJECTS & FORECAST ══ -->
+    <div class="pg" id="page-projects">
+      <div class="ph">
+        <div><div class="pt">Projects &amp; Forecast</div><div class="ps">Click cells to edit · right-click for status · drag to move</div></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-p btn-sm" onclick="openAdd(false)">+ Add Project</button>
+          <button class="btn btn-s btn-sm" id="undo-btn2" onclick="undo()" disabled style="opacity:.4;cursor:default">↩ Undo</button>
+          <button class="btn btn-p btn-sm" onclick="saveAll()">↓ Save</button>
+        </div>
+      </div>
+      <div class="fc-toolbar">
+        <input class="fsrch" type="text" placeholder="Search projects…" id="fc-search" oninput="renderTable()">
+        <select class="fsel" id="fc-mgr" onchange="renderTable()">
+          <option value="">All managers</option>
+          <option>Adam</option><option>Ben</option><option>Johnny</option><option>Andrea</option>
+        </select>
+        <select class="fsel" id="fc-status-filter" onchange="renderTable()">
+          <option value="">All statuses</option>
+          <option value="live">Live</option><option value="hold">On Hold</option>
+          <option value="hr">Hourly Rate</option>
+        </select>
+        <select class="fsel" id="fc-inv-filter" onchange="renderTable()">
+          <option value="">All invoices</option>
+          <option value="forecast">Forecasted</option><option value="issued">Issued</option>
+          <option value="overdue">Overdue</option><option value="paid">Paid</option>
+        </select>
+        <div class="tb-sep"></div>
+        <label style="font-size:10px;color:var(--grey-d);display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:500">
+          <input type="checkbox" id="fc-show-past" onchange="renderTable()"> Past months
+        </label>
+        <div class="tb-sep"></div>
+        <button class="btn btn-s btn-sm" id="undo-btn" onclick="undo()" style="opacity:.4;cursor:default" disabled>↩ Undo</button>
+        <div class="tb-sep"></div>
+        <button class="btn btn-s btn-sm" id="multi-move-btn" onclick="openMultiMove()" style="display:none">⇄ Move Selected</button>
+        <button class="btn btn-s btn-sm" id="spread-btn" onclick="openSpread()" style="display:none">⟺ Spread</button>
+        <div class="tb-sep"></div>
+        <div class="legend">
+          <div class="leg-item"><div class="leg-dot" style="background:var(--fc-forecast);border:1px solid #b8d8ee"></div>Forecast</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--fc-issued);border:2px solid #e6c200"></div>Issued</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--fc-overdue);border:2px solid #e07060"></div>Overdue</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--fc-paid);border:1px solid #8ccca8"></div>Paid</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--purple-bg);border:1px solid var(--purple)"></div>HR</div>
+        </div>
+      </div>
+      <div class="fc-scroll" id="fc-scroll">
+        <table class="fc-table" id="fc-table">
+          <thead id="fc-thead"></thead>
+          <tbody id="fc-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ PIPELINE ══ -->
+    <div class="pg" id="page-pipeline">
+      <div class="ph">
+        <div><div class="pt">Pipeline</div><div class="ps">Prospective — not yet instructed</div></div>
+        <button class="btn btn-p btn-sm" onclick="openAdd(true)">+ Add Prospect</button>
+      </div>
+      <div class="page-scroll">
+        <div class="sg" id="pipe-stats"></div>
+        <div class="card">
+          <div class="ch">
+            <div class="ct">Prospects <span class="badge ba" id="pipe-badge"></span></div>
+            <div style="display:flex;gap:6px;align-items:center;font-size:10px;color:var(--grey-d)">
+              <div style="display:flex;gap:4px">
+                <div style="width:12px;height:12px;border-radius:2px;background:#c0392b"></div> High
+                <div style="width:12px;height:12px;border-radius:2px;background:var(--amber)"></div> Med
+                <div style="width:12px;height:12px;border-radius:2px;background:var(--green)"></div> Low
+                <div style="width:12px;height:12px;border-radius:2px;background:var(--blue)"></div> Tracking
+              </div>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="fc-table" style="min-width:700px">
+              <thead><tr>
+                <th class="col-name">Project</th><th class="col-mgr">Manager</th>
+                <th>Client</th><th style="text-align:right">Est. Fee</th>
+                <th>Priority</th><th>Stage</th><th>Notes</th><th>Proposal Sent</th><th></th>
+              </tr></thead>
+              <tbody id="pipe-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCORECARD ══ -->
+    <div class="pg" id="page-scorecard">
+      <div class="ph">
+        <div><div class="pt">Team Scorecard</div><div class="ps">Billable hours, holidays &amp; work won</div></div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <select class="fsel" id="sc-qtr" onchange="renderScorecard()"></select>
+          <button class="btn btn-s btn-sm" onclick="openNewQtrModal()">+ Quarter</button>
+          <button class="btn btn-s btn-sm" onclick="openNewPersonModal()">+ Person</button>
+          <button class="btn btn-p btn-sm" onclick="saveAll()">↓ Save</button>
+        </div>
+      </div>
+      <div class="page-scroll" style="padding-top:12px">
+        <div class="card" style="margin-bottom:12px">
+          <div class="ch">
+            <div class="ct">Ben — Work Won vs Target</div>
+            <button class="btn btn-s btn-sm" onclick="openWonModal()">+ Add Win</button>
+          </div>
+          <div id="ben-won" style="padding:14px"></div>
+        </div>
+        <div class="scgrid" id="sc-grid"></div>
+      </div>
+    </div>
+
+    <!-- ══ SUCCESS WHEELS ══ -->
+    <div class="pg" id="page-wheels">
+      <div class="ph">
+        <div><div class="pt">Success Wheels</div><div class="ps">Business &amp; Personal — Current vs Ideal scores</div></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select class="fsel" id="wheel-period" onchange="renderWheels()">
+            <option value="blank_biz">Business — Template</option>
+            <option value="annual_biz">Business — Annual</option>
+            <option value="q1_biz">Business — Q1</option>
+            <option value="q2_biz">Business — Q2</option>
+            <option value="q3_biz">Business — Q3</option>
+            <option value="q4_biz">Business — Q4</option>
+            <option value="personal_template">Personal — Template</option>
+            <option value="personal_annual">Personal — Annual</option>
+            <option value="q1_personal">Personal — Q1</option>
+            <option value="q2_personal">Personal — Q2</option>
+            <option value="q3_personal">Personal — Q3</option>
+            <option value="q4_personal">Personal — Q4</option>
+          </select>
+          <button class="btn btn-p btn-sm" onclick="saveAll()">↓ Save</button>
+        </div>
+      </div>
+      <div class="page-scroll">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:960px;margin:0 auto">
+          <div class="card">
+            <div class="ch"><div class="ct" id="wheel-title-left">Wheel</div></div>
+            <div style="padding:16px;display:flex;flex-direction:column;align-items:center">
+              <canvas id="wheel-canvas" width="340" height="340"></canvas>
+              <div id="wheel-legend" style="margin-top:14px;width:100%"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="ch"><div class="ct">Edit Scores</div><div style="font-size:10px;color:var(--grey-d)">0–10 scale</div></div>
+            <div style="padding:14px" id="wheel-inputs"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ CONTEXT MENU ══ -->
+<div id="ctx-menu" class="ctx-menu" style="display:none"></div>
+
+<!-- ══ PROJECT MODAL (Forecast) ══ -->
+<div class="mo" id="proj-modal">
+  <div class="modal">
+    <div class="mh"><div class="mt" id="modal-ttl">Add Project</div><button class="mcl" onclick="closeModal('proj-modal')">✕</button></div>
+    <div class="mb">
+      <div class="fg">
+        <div class="fgr ff"><label class="fl">Project Name *</label><input class="fi" id="f-name"></div>
+        <div class="fgr"><label class="fl">Manager *</label>
+          <select class="fs" id="f-mgr">
+            <option value="">Select…</option>
+            <option>Adam</option><option>Ben</option><option>Johnny</option><option>Andrea</option>
+            <option>Adam / Andrea</option><option>Andrea/Johnny</option><option>Johnny/Adam</option>
+            <option>Andrea / Ben</option><option>Adam / Johnny</option><option>Ben / Andrea</option>
+          </select>
+        </div>
+        <div class="fgr"><label class="fl">Client</label><input class="fi" id="f-client"></div>
+        <div class="fgr"><label class="fl">PM / Contact</label><input class="fi" id="f-pm"></div>
+        <div class="fgr"><label class="fl">Agreed Fee (£)</label><input class="fi" id="f-agreed" type="number" placeholder="0"></div>
+        <div class="fgr"><label class="fl">To Be Agreed (£)</label><input class="fi" id="f-toagree" type="number" placeholder="0"></div>
+        <div class="fgr ff"><label class="fl">POP / Instructions</label><input class="fi" id="f-pop"></div>
+        <div class="fgr ff"><label class="fl">Notes</label><textarea class="fta" id="f-notes" placeholder="Status, actions…"></textarea></div>
+        <div class="fgr" id="stage-grp" style="display:none">
+          <label class="fl">Pipeline Stage</label>
+          <select class="fs" id="f-stage"><option>Early conversation</option><option>Proposal submitted</option><option>Awaiting instruction</option><option>On hold</option></select>
+        </div>
+        <div class="fgr">
+          <label class="fl">Billing Type</label>
+          <select class="fs" id="f-billing">
+            <option value="">Fixed Fee</option>
+            <option value="hr">Hourly Rate</option>
+          </select>
+        </div>
+      </div>
+      <div id="fee-sec">
+        <div class="fee-box">
+          <div class="fee-tit">Fee Schedule — monthly</div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
+            <select class="fsel" id="fee-yr" onchange="buildFeeGrid()" style="font-size:10px">
+              <option value="2025">2025</option><option value="2026" selected>2026</option>
+              <option value="2027">2027</option><option value="2028">2028</option>
+            </select>
+            <span style="font-size:10px;color:var(--grey-m)">£ per month</span>
+          </div>
+          <div class="fee-grid" id="fee-grid"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:14px">
+        <button class="btn btn-s" onclick="closeModal('proj-modal')">Cancel</button>
+        <button class="btn btn-p" onclick="saveProject()">Save Project</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ L10 PROJECT MODAL ══ -->
+<div class="mo" id="l10-proj-modal">
+  <div class="modal" style="width:500px">
+    <div class="mh"><div class="mt" id="l10-modal-title">Add Project</div><button class="mcl" onclick="closeModal('l10-proj-modal')">✕</button></div>
+    <div class="mb">
+      <input type="hidden" id="l10-edit-idx">
+      <div class="fg">
+        <div class="fgr ff"><label class="fl">Project Name</label><input class="fi" id="lf-name" placeholder="e.g. 33-35 Piccadilly"></div>
+        <div class="fgr"><label class="fl">Feedback Status</label>
+          <select class="fi" id="lf-fb">
+            <option value="nr">Not Requested</option><option value="pd">Pending</option>
+            <option value="rc">Received</option><option value="hd">Hold</option>
+          </select>
+        </div>
+        <div class="fgr"><label class="fl">Job Owner</label><input class="fi" id="lf-own" placeholder="e.g. JE / AM"></div>
+        <div class="fgr"><label class="fl">Target / Owner Note</label><input class="fi" id="lf-bw" placeholder="e.g. this week / next week"></div>
+        <div class="fgr ff"><label class="fl">Actions (one per line)</label><textarea class="fta" id="lf-ac" rows="4" placeholder="JE to arrange follow-up&#10;AM to confirm fee"></textarea></div>
+        
+        <div class="fgr ff"><label class="fl">Type</label>
+          <select class="fi" id="lf-type"><option value="live">Live Job</option><option value="pipeline">Pipeline</option></select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+        <button class="btn btn-s" onclick="closeModal('l10-proj-modal')">Cancel</button>
+        <button class="btn btn-p" onclick="saveL10Project()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REPORT MODAL ══ -->
+<div class="mo" id="report-modal">
+  <div class="modal" style="width:640px">
+    <div class="mh"><div class="mt">Weekly Report Export</div><button class="mcl" onclick="closeModal('report-modal')">✕</button></div>
+    <div class="mb">
+      <div id="report-content"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+        <button class="btn btn-s" onclick="closeModal('report-modal')">Close</button>
+        <button class="btn btn-p" onclick="copyReport()">Copy</button>
+        <button class="btn btn-p" onclick="dlReport()">Download .txt</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ WORK WON MODAL ══ -->
+<div class="mo" id="won-modal">
+  <div class="modal" style="width:440px">
+    <div class="mh"><div class="mt">Add Work Won — Ben</div><button class="mcl" onclick="closeModal('won-modal')">✕</button></div>
+    <div class="mb">
+      <div class="fg">
+        <div class="fgr ff"><label class="fl">Select from Pipeline</label><select class="fs" id="ww-pipe" onchange="fillWon()"><option value="">— Pipeline project —</option></select></div>
+        <div class="fgr ff"><label class="fl">Project Name</label><input class="fi" id="ww-name"></div>
+        <div class="fgr"><label class="fl">Value Won (£)</label><input class="fi" id="ww-val" type="number"></div>
+        <div class="fgr"><label class="fl">Week</label><select class="fs" id="ww-wk"></select></div>
+        <div class="fgr ff"><label class="fl">Promote to Active?</label><select class="fs" id="ww-promote"><option value="">No</option><option value="yes">Yes — move to Active Projects</option></select></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:14px">
+        <button class="btn btn-s" onclick="closeModal('won-modal')">Cancel</button>
+        <button class="btn btn-p" onclick="saveWon()">Add Win</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NEW QUARTER MODAL ══ -->
+<div class="mo" id="qtr-modal">
+  <div class="modal" style="width:380px">
+    <div class="mh"><div class="mt">Add New Quarter</div><button class="mcl" onclick="closeModal('qtr-modal')">✕</button></div>
+    <div class="mb">
+      <div class="fg">
+        <div class="fgr"><label class="fl">Quarter</label><select class="fs" id="nq-qtr"><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option></select></div>
+        <div class="fgr"><label class="fl">Year</label><select class="fs" id="nq-yr"><option>2025</option><option>2026</option><option>2027</option><option>2028</option></select></div>
+        <div class="fgr ff"><label class="fl">Start Date (first Monday)</label><input class="fi" id="nq-start" type="date"></div>
+        <div class="fgr ff"><label class="fl">Ben Target (£)</label><input class="fi" id="nq-target" type="number" value="195000"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:14px">
+        <button class="btn btn-s" onclick="closeModal('qtr-modal')">Cancel</button>
+        <button class="btn btn-p" onclick="createQuarter()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NEW PERSON MODAL ══ -->
+<div class="mo" id="person-modal">
+  <div class="modal" style="width:340px">
+    <div class="mh"><div class="mt">Add Team Member</div><button class="mcl" onclick="closeModal('person-modal')">✕</button></div>
+    <div class="mb">
+      <div class="fg">
+        <div class="fgr ff"><label class="fl">Name</label><input class="fi" id="np-name" placeholder="e.g. Sarah"></div>
+        <div class="fgr ff"><label class="fl">Colour</label><input class="fi" id="np-color" type="color" value="#2e7d56" style="height:36px;cursor:pointer"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:14px">
+        <button class="btn btn-s" onclick="closeModal('person-modal')">Cancel</button>
+        <button class="btn btn-p" onclick="addPerson()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// SEED DATA — FORECAST (from clw_data.json)
+// ═══════════════════════════════════════════════════════════
+const SEED_P=[{"id":"p2","name":"Richardson Milling","manager":"Adam","client":"Richardson","pm":"Edge","pop":"4 site visits remaining for phase 1b","notes":"Awaiting Edge confirmation for PO for agreed fees (£4k?)  ADAM REQUESTED FEE FROM GGS FOR  POST COMPLETION MONITORING.","agreed":30500.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-07":6720.0,"2025-09":2000.0,"2026-01":2000.0},"status":"live","invState":{"2025-07":"issued","2025-09":"issued","2026-01":"issued"}},{"id":"p3","name":"SSD","manager":"Adam","client":"City of London","pm":"AY","pop":"CMT","notes":"We need to demobilise until Feb 2026 - BASIC REPORT FOR SEPTEMBER ISSUED","agreed":4000.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-02":11200.0,"2025-03":2000.0,"2025-04":2000.0,"2025-05":2000.0,"2025-06":8000.0,"2025-12":1000.0,"2026-02":1000.0,"2026-03":1000.0,"2026-04":500.0,"2026-05":500.0},"status":"live","invState":{"2025-02":"issued","2025-03":"issued","2025-04":"issued","2025-05":"issued","2025-06":"issued","2025-12":"issued","2026-02":"issued","2026-03":"issued","2026-04":"issued","2026-05":"forecast"},"leftToInvoice":500.0},{"id":"p4","name":"220 Blackfriars","manager":"Adam","client":"JTRE","pm":"","pop":"CMT","notes":"Stage 5 confirmed","agreed":12700.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-03":500.0,"2025-09":2400.0,"2025-10":500.0,"2025-11":1200.0,"2026-01":1700.0,"2026-02":500.0,"2026-04":500.0,"2026-05":1700.0,"2026-06":1700.0,"2026-07":500.0,"2026-08":500.0,"2026-09":500.0,"2026-10":1100.0,"2026-11":4000.0},"status":"live","invState":{"2025-03":"issued","2025-09":"issued","2025-10":"issued","2025-11":"issued","2026-01":"issued","2026-02":"issued","2026-04":"issued","2026-05":"forecast","2026-06":"forecast","2026-07":"forecast","2026-08":"forecast","2026-09":"forecast","2026-10":"forecast","2026-11":"forecast"},"leftToInvoice":10500.0},{"id":"p5","name":"75 London Wall","manager":"Adam","client":"Castleforge","pm":"Opera PM","pop":"Stage 5","notes":"Stage 5 - Fee proposal TBC","agreed":50000.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-02":6000.0,"2025-03":5500.0,"2025-04":6500.0,"2025-05":8750.0,"2025-06":2250.0,"2025-07":2200.0,"2025-08":3000.0,"2025-09":1300.0,"2025-10":3600.0,"2026-01":6000.0,"2026-02":5000.0,"2026-03":5000.0,"2026-04":3500.0,"2026-05":2000.0,"2026-06":1000.0,"2026-07":500.0,"2026-08":500.0,"2026-10":500.0,"2026-11":4000.0,"2026-12":5000.0,"2027-01":1500.0,"2027-02":1500.0,"2027-03":1000.0,"2027-04":500.0,"2027-05":500.0,"2027-08":500.0,"2027-09":500.0,"2027-10":1500.0,"2027-11":1500.0,"2027-12":8000.0},"status":"live","invState":{"2025-02":"issued","2025-03":"issued","2025-04":"issued","2025-05":"issued","2025-06":"issued","2025-07":"issued","2025-08":"issued","2025-09":"issued","2025-10":"issued","2026-01":"issued","2026-02":"issued","2026-03":"issued","2026-04":"issued","2026-05":"forecast","2026-06":"forecast","2026-07":"forecast","2026-08":"forecast","2026-10":"forecast","2026-11":"forecast","2026-12":"forecast","2027-01":"forecast","2027-02":"forecast","2027-03":"forecast","2027-04":"forecast","2027-05":"forecast","2027-08":"forecast","2027-09":"forecast","2027-10":"forecast","2027-11":"forecast","2027-12":"forecast"},"leftToInvoice":34000.0},{"id":"p6","name":"Ebury Gate","manager":"Adam","client":"Grosvenor","pm":"Opera PM","pop":"Stage 5","notes":"Stage 5 kickoff timing unknown","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-02":13170.0,"2025-03":5000.0,"2025-07":6240.0,"2025-09":2400.0,"2025-10":3100.0,"2026-03":1584.0,"2026-05":1000.0},"status":"live","hourlyRate":true,"invState":{"2025-02":"issued","2025-03":"issued","2025-07":"issued","2025-09":"issued","2025-10":"issued","2026-03":"issued","2026-05":"forecast"}},{"id":"p7","name":"Ebury Gate","manager":"Adam","client":"Grosvenor","pm":"Opera PM","pop":"Stage 5","notes":"Stage 5 kickoff timing unknown","agreed":6600.0,"toAgree":21250.0,"prospective":false,"stage":null,"fees":{"2025-02":13170.0,"2025-03":5000.0,"2025-07":6240.0,"2025-09":2400.0,"2025-10":3100.0,"2026-02":2900.0,"2026-03":3700.0,"2026-04":5.0},"status":"live","invState":{"2025-02":"issued","2025-03":"issued","2025-07":"issued","2025-09":"issued","2025-10":"issued","2026-02":"issued","2026-03":"issued","2026-04":"issued"}},{"id":"p8","name":"The Courtyard","manager":"Adam","client":"GPE","pm":"Opera","pop":"Stage 5","notes":"£10k CMT pending instruction","agreed":0,"toAgree":10500.0,"prospective":false,"stage":null,"fees":{"2025-02":3100.0,"2025-03":3000.0,"2025-04":6200.0,"2025-05":9000.0,"2025-06":3500.0},"status":"live","invState":{"2025-02":"issued","2025-03":"issued","2025-04":"issued","2025-05":"issued","2025-06":"issued"}},{"id":"p9","name":"Rye Hill","manager":"Adam","client":"Engie","pm":"","pop":"","notes":"Remedial design submitted","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-04":4500.0},"status":"live","invState":{"2025-04":"issued"}},{"id":"p10","name":"2 Trafalgar Way","manager":"Adam","client":"Urbanest","pm":"RLB","pop":"CMT (hourly work - future site visits)","notes":"Site Inspection Report Issued for September 2025 Visit. Awaiting correspondence for further visits","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-03":540.0,"2025-04":720.0,"2025-09":900.0,"2025-11":720.0,"2026-03":1440.0},"status":"live","hourlyRate":true,"invState":{"2025-03":"issued","2025-04":"issued","2025-09":"issued","2025-11":"issued","2026-03":"issued"}},{"id":"p11","name":"1 Hanover Square","manager":"Adam","client":"Nautilina","pm":"Avison Young","pop":"Project start","notes":"Stg 3 SUBMIT 17th October (Split final £11k into 3 months to allow for soemthing each month but depends on Programme and Issues could possibly be 2026 so December or November might not get Invoiced)","agreed":30000.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-06":4250.0,"2025-08":5090.0,"2025-09":9400.0,"2025-10":3660.0,"2025-11":2000.0,"2026-01":500.0,"2026-02":900.0,"2026-03":2800.0,"2026-04":1400.0},"status":"live","invState":{"2025-06":"issued","2025-08":"issued","2025-09":"issued","2025-10":"issued","2025-11":"issued","2026-01":"issued","2026-02":"issued","2026-03":"issued","2026-04":"issued"},"leftToInvoice":1400.0},{"id":"p12","name":"British Museum","manager":"Adam","client":"Civic","pm":"","pop":"PODIUM (extra)","notes":"Review exisitng investigation and prepare support on current defects schedule","agreed":5250.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-06":2475.0,"2025-11":2625.0,"2026-02":1500.0,"2026-04":1125.0},"status":"live","invState":{"2025-06":"issued","2025-11":"issued","2026-02":"issued","2026-04":"issued"},"leftToInvoice":1125.0},{"id":"p13","name":"British Museum","manager":"Adam","client":"Civic","pm":"","pop":"PODIUM","notes":"Following up defect review process - Review tender + works on site. FEE AGREED IN PRINCIPLE","agreed":13200.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-06":2475.0,"2026-04":2500.0,"2026-05":1460.0,"2026-06":3080.0,"2026-07":3080.0,"2026-08":3080.0},"status":"live","invState":{"2025-06":"issued","2026-04":"issued","2026-05":"forecast","2026-06":"forecast","2026-07":"forecast","2026-08":"forecast"},"leftToInvoice":13200.0},{"id":"p14","name":"Kingsfield","manager":"Ben","client":"Fidelity","pm":"EW","pop":"","notes":"","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{},"status":"live"},{"id":"p15","name":"Crown Towers","manager":"Ben","client":"","pm":"EW","pop":"","notes":"","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{},"status":"live"},{"id":"p16","name":"British Museum","manager":"Adam","client":"Civic","pm":"","pop":"BASEMENT ONSITE & DESIGN REVIEW","notes":"Awaiting opening on site to review","agreed":18480.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-06":2475.0,"2025-12":1320.0,"2026-01":1900.0,"2026-06":900.0,"2026-07":3780.0,"2026-08":3780.0,"2026-09":3800.0,"2026-10":3000.0},"status":"live","invState":{"2025-06":"issued","2025-12":"issued","2026-01":"issued","2026-06":"forecast","2026-07":"forecast","2026-08":"forecast","2026-09":"forecast","2026-10":"forecast"},"leftToInvoice":15260.0},{"id":"p17","name":"8 Devonshire Square","manager":"Adam","client":"Cogent","pm":"PM","pop":"Site Walk Initial","notes":"they might want us to top and tail Vector's work","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-08":600.0},"status":"live","invState":{"2025-08":"issued"}},{"id":"p18","name":"Southbank Centre","manager":"Adam","client":"Southbank","pm":"AY","pop":"Stage 2","notes":"RIBA Stage 2 Develop Waterproofing Design Options - £12,500\nRIBA Stage 3 Develop Outline Design - £38,500 - Approved and have PO for £51k","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-07":1320.0,"2025-08":2640.0,"2025-09":9860.0,"2025-10":19000.0,"2025-11":10500.0,"2025-12":9000.0,"2026-03":4.0},"status":"live","invState":{"2025-07":"issued","2025-08":"issued","2025-09":"issued","2025-10":"issued","2025-11":"issued","2025-12":"issued","2026-03":"issued"}},{"id":"p19","name":"Timber Square","manager":"Johnny","client":"MACE","pm":"","pop":"Review informaiotn as built","notes":"Review info + site visit for Adam","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-11":17200.0,"2025-12":18520.0,"2026-02":1320.0},"status":"live","invState":{"2025-11":"issued","2025-12":"issued","2026-02":"issued"}},{"id":"p20","name":"Golden Lane","manager":"Andrea / Ben","client":"Castleforge","pm":"G&T","pop":"CMT","notes":"I've done another round of defects on a tracker following a new tech sub","agreed":9250.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-02":5818.32,"2025-03":1000.0,"2025-10":4000.0,"2026-03":3000.0,"2026-05":2000.0,"2026-06":2000.0,"2026-07":2250.0},"status":"live","invState":{"2025-02":"issued","2025-03":"issued","2025-10":"issued","2026-03":"issued","2026-05":"forecast","2026-06":"forecast","2026-07":"forecast"},"leftToInvoice":6250.0},{"id":"p21","name":"37 Fleet St","manager":"Ben","client":"Hoare & Co","pm":"AY","pop":"CMT","notes":"Ben to do a site note or something","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-02":1500.0,"2025-03":1000.0},"status":"live","invState":{"2025-02":"issued","2025-03":"issued"}},{"id":"p22","name":"Kennaway Estate","manager":"Johnny","client":"United Living","pm":"","pop":"Design review","notes":"Design review - NO Response for PO (BH TO SPK)","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-10":3960.0},"status":"complete","invState":{"2025-10":"issued"}},{"id":"p23","name":"Saltwater (15FC)","manager":"Johnny","client":"Brennan","pm":"","pop":"Site visit for Type C install 31st Oct","notes":"COMPLETED","agreed":2000.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-03":500.0,"2025-10":1200.0,"2026-04":2000.0},"status":"complete","invState":{"2025-03":"issued","2025-10":"issued","2026-04":"issued"},"leftToInvoice":2000.0},{"id":"p24","name":"Oxford Science Park","manager":"Johnny","client":"Oxford Science Park","pm":"3PM","pop":"CMT","notes":"Working at hourly rate for wall pour 1 defect resilution/remedials. To date:  2x site visits + meetings/correspondence, approx. £6210.","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-02":2750.0,"2025-04":2000.0,"2025-05":3750.0,"2025-06":3550.0,"2025-07":1000.0,"2025-08":500.0,"2025-09":6210.0,"2025-10":1000.0,"2025-12":440.0,"2026-05":500.0},"status":"live","hourlyRate":true,"invState":{"2025-02":"issued","2025-04":"issued","2025-05":"issued","2025-06":"issued","2025-07":"issued","2025-08":"issued","2025-09":"issued","2025-10":"issued","2025-12":"issued","2026-05":"forecast"}},{"id":"p25","name":"Holden House","manager":"Johnny","client":"Derwent","pm":"G&T","pop":"Agree Stage 5 fee","notes":"Stage 4: Additional £2640 for sump drawing and coordination. Stage 5 TBC following vault survey (£26,400)","agreed":73860.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-08":8250.0,"2025-10":7365.0,"2025-11":3495.0,"2025-12":2300.0,"2026-01":2300.0,"2026-02":2300.0,"2026-05":4670.0,"2026-07":1320.0,"2026-08":1320.0,"2026-09":1320.0,"2026-10":2640.0,"2026-11":2640.0,"2026-12":1320.0,"2027-01":2640.0,"2027-02":2640.0,"2027-03":1320.0},"status":"live","invState":{"2025-08":"issued","2025-10":"issued","2025-11":"issued","2025-12":"issued","2026-01":"issued","2026-02":"issued","2026-05":"forecast","2026-07":"forecast","2026-08":"forecast","2026-09":"forecast","2026-10":"forecast","2026-11":"forecast","2026-12":"forecast","2027-01":"forecast","2027-02":"forecast","2027-03":"forecast"},"leftToInvoice":15530.0},{"id":"p26","name":"JESB","manager":"Johnny","client":"Morgan Sindall","pm":"n/a","pop":"Review contractors proposals","notes":"Verbal instruction received, awaiting P.O. from Nigel Gamble for £11330.","agreed":11330.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-03":4800.0,"2025-05":9600.0,"2026-02":1500.0,"2026-04":2500.0,"2026-09":500.0,"2026-10":1250.0,"2026-11":1330.0,"2026-12":2000.0,"2027-01":2250.0},"status":"live","invState":{"2025-03":"issued","2025-05":"issued","2026-02":"issued","2026-04":"issued","2026-09":"forecast","2026-10":"forecast","2026-11":"forecast","2026-12":"forecast","2027-01":"forecast"},"leftToInvoice":9830.0},{"id":"p27","name":"River Gardens","manager":"Johnny/Adam","client":"Durkan","pm":"n/a","pop":"Finalise report.","notes":"Report Issued","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-02":3500.0,"2025-11":1500.0},"status":"complete","invState":{"2025-02":"issued","2025-11":"issued"}},{"id":"p28","name":"5 Strand","manager":"Andrea/Johnny","client":"Whitbread","pm":"Cumming Group","pop":"Start Stage 5 CMT","notes":"Awaiting program for CMT works-chased  30.06.25","agreed":19600.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-02":10000.0,"2025-03":7000.0,"2025-04":1000.0,"2025-06":1000.0,"2025-09":4000.0,"2025-10":3000.0,"2025-12":2000.0,"2026-01":2000.0,"2026-02":2000.0,"2026-04":2000.0,"2026-05":1000.0,"2026-06":2600.0,"2026-07":1000.0},"status":"live","invState":{"2025-02":"issued","2025-03":"issued","2025-04":"issued","2025-06":"issued","2025-09":"issued","2025-10":"issued","2025-12":"issued","2026-01":"issued","2026-02":"issued","2026-04":"issued","2026-05":"forecast","2026-06":"forecast","2026-07":"forecast"},"leftToInvoice":6600.0},{"id":"p29","name":"33-35 Piccadilly","manager":"Johnny","client":"Kier/Crown","pm":"Jackson Coles","pop":"CMT","notes":"Meeting Jessica this week for catch up","agreed":25200.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-02":3000.0,"2025-03":6000.0,"2025-04":3000.0,"2026-04":1200.0,"2026-06":1200.0,"2026-08":1200.0,"2026-10":1200.0},"status":"live","invState":{"2025-02":"issued","2025-03":"issued","2025-04":"issued","2026-04":"issued","2026-06":"forecast","2026-08":"forecast","2026-10":"forecast"},"leftToInvoice":4800.0},{"id":"p30","name":"40 Holborn Viaduct","manager":"Johnny","client":"Nuveen","pm":"Gleeds","pop":"Negotiating Stage 5 fee","notes":"Awaiting instruction on CMT (£8,580)","agreed":0,"toAgree":8580.0,"prospective":false,"stage":null,"fees":{"2025-03":3000.0,"2025-04":2500.0,"2025-05":1500.0,"2025-06":2300.0,"2026-03":1000.0},"status":"live","invState":{"2025-03":"issued","2025-04":"issued","2025-05":"issued","2025-06":"issued","2026-03":"issued"}},{"id":"p31","name":"Green Coat & Gordon House","manager":"Johnny","client":"Derwent","pm":"Opera","pop":"Negotiate addition design work","notes":"Win more work - JE chased 30.06.25","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-04":2600.0,"2025-05":6100.0},"status":"live","invState":{"2025-04":"issued","2025-05":"issued"}},{"id":"p32","name":"10 Piccadilly","manager":"Johnny","client":"Kier/Crown","pm":"","pop":"Stage 4 issue","notes":"JULY INVOICE - CONDITION SURVEY £2,640 & PART STAGE 4a £11,250","agreed":0,"toAgree":26575.0,"prospective":false,"stage":null,"fees":{"2025-06":4500.0,"2025-07":13890.0,"2025-09":9500.0,"2025-10":1750.0},"status":"live","invState":{"2025-06":"issued","2025-07":"issued","2025-09":"issued","2025-10":"issued"}},{"id":"p33","name":"Ark Bolingbroke","manager":"Johnny","client":"Ark","pm":"","pop":"CMT","notes":"Reverting to Hot Melt - Ark getting quotes","agreed":13635.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-07":600.0,"2025-08":1800.0,"2025-10":3075.0,"2026-01":1600.0,"2026-05":800.0,"2026-06":2800.0,"2026-07":2800.0,"2026-08":2800.0,"2026-09":2835.0},"status":"live","invState":{"2025-07":"issued","2025-08":"issued","2025-10":"issued","2026-01":"issued","2026-05":"forecast","2026-06":"forecast","2026-07":"forecast","2026-08":"forecast","2026-09":"forecast"},"leftToInvoice":12035.0},{"id":"p34","name":"54 The Bishops Ave","manager":"Ben","client":"MYCO","pm":"","pop":"Initial site visit","notes":"","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-06":1320.0},"status":"live","invState":{"2025-06":"issued"},"leftToInvoice":1320.0},{"id":"p35","name":"12 Burntwood Road Town","manager":"Andrea","client":"Kirsty Amstrong","pm":"","pop":"Site visit","notes":"Site visit scheduled for the 31st of October","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-12":3250.0,"2026-04":891.0},"status":"live","hourlyRate":true,"invState":{"2025-12":"issued","2026-04":"issued"}},{"id":"p36","name":"JFK School","manager":"Ben","client":"","pm":"","pop":"","notes":"","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-10":2640.0},"status":"live","invState":{"2025-10":"issued"}},{"id":"p37","name":"7 Ridgmount","manager":"Johnny","client":"Maddie Reyniers (Opera)","pm":"PM","pop":"Site visit / Familiarisaiton/Stage 3","notes":"TBC the total scope of work","agreed":24000.0,"toAgree":54500.0,"prospective":false,"stage":null,"fees":{"2025-12":2250.0,"2026-01":8750.0,"2026-02":11500.0,"2026-03":1500.0},"status":"live","invState":{"2025-12":"issued","2026-01":"issued","2026-02":"issued","2026-03":"issued"}},{"id":"p38","name":"101 Cleveland St","manager":"Adam / Johnny","client":"Chris Schorah","pm":"Art Invest","pop":"Site visit / Familiarisaiton/ options","notes":"","agreed":10860.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2025-12":6000.0,"2026-01":3610.0,"2026-03":1250.0},"status":"live","invState":{"2025-12":"issued","2026-01":"issued","2026-03":"issued"}},{"id":"p39","name":"St James Square","manager":"Adam","client":"Hannah Baker","pm":"RIDGE","pop":"Up to Stage 3","notes":"","agreed":28000.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2026-01":7500.0,"2026-02":4000.0,"2026-03":12500.0},"status":"live","invState":{"2026-01":"issued","2026-02":"issued","2026-03":"issued"},"leftToInvoice":16500.0},{"id":"p40","name":"Templemen House","manager":"Andrea/Johnny","client":"Ross Blakemore","pm":"Amiri Homes","pop":"Familiarisaiton/ options","notes":"","agreed":3960.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2026-01":2640.0,"2026-03":1320.0},"status":"live","invState":{"2026-01":"issued","2026-03":"issued"}},{"id":"p41","name":"56 Bishops Ave","manager":"Adam / Andrea","client":"Ben Forbs","pm":"Cost consultancy","pop":"Expert witness","notes":"","agreed":30000.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2026-01":2640.0,"2026-03":3960.0},"status":"live","invState":{"2026-01":"issued","2026-03":"issued"}},{"id":"p42","name":"St. Thomas Yard","manager":"Johnny / Andrea","client":"Jarrard Howe","pm":"G&T","pop":"Design peer review","notes":"","agreed":1000.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2026-03":1000.0},"status":"live","invState":{"2026-03":"issued"}},{"id":"p43","name":"The Dovetail","manager":"Johnny / Andrea","client":"G&T","pm":"G&T","pop":"","notes":"","agreed":21500.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2026-02":13000.0,"2026-03":8500.0},"status":"live","invState":{"2026-02":"issued","2026-03":"issued"}},{"id":"p44","name":"1 Knightbridge Green","manager":"Adam / Andrea","client":"B&CO","pm":"B&CO","pop":"Up to Stage 5","notes":"","agreed":45930.0,"toAgree":29040.0,"prospective":false,"stage":null,"fees":{"2026-04":8862.0,"2026-05":5863.0,"2026-06":1500.0,"2026-07":500.0,"2026-08":4600.0,"2026-09":3200.0,"2026-10":3000.0,"2026-11":3000.0,"2026-12":3000.0,"2027-01":3000.0},"status":"live","invState":{"2026-04":"issued","2026-05":"forecast","2026-06":"forecast","2026-07":"forecast","2026-08":"forecast","2026-09":"forecast","2026-10":"forecast","2026-11":"forecast","2026-12":"forecast","2027-01":"forecast"},"leftToInvoice":45930.0},{"id":"p45","name":"27-29 Olympic Way","manager":"Adam / Andrea","client":"Property Manager","pm":"","pop":"Review defet","notes":"","agreed":4250.0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2026-04":600.0,"2026-05":3530.0},"status":"live","invState":{"2026-04":"issued","2026-05":"forecast"},"leftToInvoice":4250.0},{"id":"p46","name":"Nottingham University","manager":"Johnny","client":"KIer","pm":"KIer","pop":"EW","notes":"","agreed":0,"toAgree":0,"prospective":false,"stage":null,"fees":{"2026-04":3080.0},"status":"live","hourlyRate":true,"invState":{"2026-04":"issued"}},{"id":"x58","name":"54 Merton High Street","manager":"","client":"","pm":"","pop":"","notes":"","agreed":0,"toAgree":6850.0,"prospective":true,"stage":"Generated from Excel","fees":{},"status":"pipeline","pipeGeneratedDate":"15/05/2026"},{"id":"x59","name":"City of London","manager":"","client":"","pm":"","pop":"","notes":"","agreed":0,"toAgree":56000.0,"prospective":true,"stage":"Generated from Excel","fees":{},"status":"pipeline","pipeGeneratedDate":"15/05/2026"},{"id":"x60","name":"Basement Waterproofing Advice – Balfour House, Great Titchfield Street","manager":"","client":"","pm":"","pop":"","notes":"","agreed":0,"toAgree":4470.0,"prospective":true,"stage":"Generated from Excel","fees":{},"status":"pipeline","pipeGeneratedDate":"15/05/2026"}];
+
+const SEED_SC={"Q3-2025":{"weeks":["30-Jun","07-Jul","14-Jul","21-Jul","28-Jul","04-Aug","11-Aug","18-Aug","25-Aug","01-Sep","08-Sep","15-Sep","22-Sep"],"Ben":{"workWon":[0,0,23320,23320,25320,25320,25320,25320,105320,110820,114780,115080,115080],"target":195000},"Adam":{"billable":[24,22,29,29,12.5,31.5,28,42,29,37,28,39,38],"holiday":[0,1,0,0,3,0.5,0,0.5,1,0,1,0,0],"sick":[3,5.75,9.375,13,14.5625,18.5,22,27.25,30.875,35.5,39,43.875,48.625]},"Johnny":{"billable":[28,28,40,33.5,0,8,32.5,26,26.5,33.5,28.5,33,36],"holiday":[0,0,0,1,5,4,0,1,1,0,0.5,0,0],"sick":[3.5,7,12,16.1875,16.1875,17.1875,21.25,24.5,27.8125,32,35.5625,39.6875,39.6875]}},"Q4-2025":{"weeks":["29-Sep","06-Oct","13-Oct","20-Oct","27-Oct","03-Nov","10-Nov","17-Nov","24-Nov","01-Dec","08-Dec","15-Dec","22-Dec"],"Ben":{"workWon":[1320,2640,5890,24370,60120,65370,95570,100070,107630,107630,139270,139270,139270],"target":195000},"Adam":{"billable":[34.5,29,33,27,19,28,33,30,27.5,32,23,7,0],"holiday":[0,0,1,0,0,0,0,0,0,0,0,3,5],"sick":[0,0,0,0,0,0,0,0.5,0,0,0,0,0]},"Johnny":{"billable":[25.5,30.5,34,29,21,17,28,35,27,36.5,23.5,29,11],"holiday":[0,0,0,0,2,0,0,0,0,0,0,0,4],"sick":[0,0,0,0,0,0,0,0,0,0,0,0,0]},"Andrea":{"billable":[20,29,15,8,18.5,12.5,17.5,17.5,18,17,14.5,21,9.5],"holiday":[0,0,0,0,0,0,0,0,0,0,2,0,2],"sick":[0,0,0,0,0,0,0,0,0,0,0,0,0]}},"Q1-2026":{"weeks":["29-Dec","05-Jan","12-Jan","19-Jan","26-Jan","02-Feb","09-Feb","16-Feb","23-Feb","02-Mar","09-Mar","16-Mar","23-Mar"],"Ben":{"workWon":[50000,0,9900,17330,43820,1320,0,0,0,0,0,1000,74970],"target":195000},"Adam":{"billable":[0,24,21,28.5,29,38,33,32,34,20,22,15,49],"holiday":[4,0,0,0,0,0,0,0.5,0,0,0,1.5,0],"sick":[0,0,0,0,0,0,0,0,0,0,0,0,0]},"Johnny":{"billable":[6.5,14.5,19.5,27.5,33.5,38,47,0,36,25,38.5,13.5,1],"holiday":[1,0,0,0,0,0,0,5,0,0,0,0,3],"sick":[0,0,0,0,0,0,0,0,0,0,0,0,0]},"Andrea":{"billable":[4.5,14,0,7.5,12.5,13.5,0,0,0,0,0,0,0],"holiday":[1,0,0,0,0,0,0,0,1,4,0,0,0],"sick":[0,0,0,0,0,0,4,5,1,0,0,0,0]}},"Q2-2026":{"weeks":["30-Mar","06-Apr","13-Apr","20-Apr","27-Apr","04-May","11-May","18-May","25-May","01-Jun","08-Jun","15-Jun","22-Jun"],"Ben":{"workWon":[0,6250,0,0,0,0,0,0,0,0,0,0,0],"target":195000},"Adam":{"billable":[20,27,0,0,0,0,0,0,0,0,0,0,0],"holiday":[1,1,0,0,0,0,0,0.5,0,0,0,0,0],"sick":[0,0,0,0,0,0,0,0,0,0,0,0,0]},"Johnny":{"billable":[0,0,0,0,0,0,0,0,0,0,0,0,0],"holiday":[5,5,0,0,0,0,0,0,0,0,0,0,0],"sick":[0,0,0,0,0,0,0,0,0,0,0,0,0]},"Andrea":{"billable":[4.5,14,0,7.5,12.5,13.5,0,0,0,0,0,0,0],"holiday":[1,0,0,0,0,0,0,0,1,4,0,0,0],"sick":[0,0,0,0,0,0,4,5,1,0,0,0,0]}}};
+
+const SEED_QW={"Q3-2025":["30-Jun","07-Jul","14-Jul","21-Jul","28-Jul","04-Aug","11-Aug","18-Aug","25-Aug","01-Sep","08-Sep","15-Sep","22-Sep"],"Q4-2025":["29-Sep","06-Oct","13-Oct","20-Oct","27-Oct","03-Nov","10-Nov","17-Nov","24-Nov","01-Dec","08-Dec","15-Dec","22-Dec"],"Q1-2026":["29-Dec","05-Jan","12-Jan","19-Jan","26-Jan","02-Feb","09-Feb","16-Feb","23-Feb","02-Mar","09-Mar","16-Mar","23-Mar"],"Q2-2026":["30-Mar","06-Apr","13-Apr","20-Apr","27-Apr","04-May","11-May","18-May","25-May","01-Jun","08-Jun","15-Jun","22-Jun"]};
+
+// ═══════════════════════════════════════════════════════════
+// SEED DATA — L10 (from CLW_L10_data_2026-05-13.json, latest week = 2026-05-17)
+// ═══════════════════════════════════════════════════════════
+const SEED_L10_WEEK = "2026-05-17";
+const SEED_L10 = {"2026-05-10":{"metrics":{"q1Won":"198.3K","q1Left":"-3.4K","q2Won":"26.3K","q2Left":"168.7K","q1Avg":"46.7K","q2Avg":"25.3K","jan":"43.1K","feb":"47.4K","mar":"49.5K","apr":"32.5K","may":"27.0K","jun":"16.9K"},"liveJobs":[{"id":1,"name":"Saltwater","fb":"nr","own":"JE","bw":"EoW","ac":[{"t":"No update — send courtesy email by end of week","d":false},{"t":"JE send to AM contacts for feedback","d":false}],"nt":""},{"id":2,"name":"Oxford Park","fb":"rc","own":"JE","bw":"","ac":[{"t":"JE waiting for follow-up site visit","d":false}],"nt":""},{"id":3,"name":"Holden House","fb":"nr","own":"JE","bw":"Next week","ac":[{"t":"Meeting next week + Review (1 day of work)","d":false},{"t":"JE follow up on Julien — agreement on extra fee / design review","d":false},{"t":"JE initial review of drawings — hold comments until further instruction","d":false}],"nt":""},{"id":4,"name":"JESB","fb":"pd","own":"JE","bw":"","ac":[{"t":"Works potentially moved to end of summer","d":false},{"t":"AM check feedback lead with JE","d":false}],"nt":""},{"id":5,"name":"5 The Strand","fb":"nr","own":"JE/AM","bw":"Monday","ac":[{"t":"Ben discussed with Marcus — positive feedback","d":false},{"t":"Site visit to arrange on Monday","d":false}],"nt":""},{"id":6,"name":"33-35 Piccadilly","fb":"nr","own":"JE","bw":"","ac":[{"t":"Send request to Jessica","d":false},{"t":"Report sent following site visit — JE awaiting follow-up","d":false}],"nt":""},{"id":7,"name":"10 Piccadilly","fb":"pd","own":"JE","bw":"","ac":[{"t":"Request new fee proposal for Stage 5","d":false},{"t":"If no answer — follow up with call","d":false}],"nt":""},{"id":8,"name":"Ark","fb":"nr","own":"JE","bw":"","ac":[{"t":"JE to work on follow-up condition report and key actions for next stage","d":false}],"nt":""},{"id":9,"name":"7 Ridgemont","fb":"pd","own":"JE/AM","bw":"June","ac":[{"t":"Stage 3 completed","d":true},{"t":"AM good conversation with Maddie — project to pick up in June","d":false},{"t":"AM to follow up on feedback requests","d":false}],"nt":""},{"id":10,"name":"220 Blackfriars","fb":"hd","own":"AL","bw":"End May","ac":[{"t":"AL to follow up by end of May to arrange follow-up site visit","d":false},{"t":"AM to ask — hold until resi completed","d":false}],"nt":""},{"id":11,"name":"SSD","fb":"nr","own":"AL","bw":"","ac":[{"t":"Report out — no update","d":false},{"t":"AM to request feedback — AL to pass key contacts","d":false}],"nt":""},{"id":12,"name":"75LW","fb":"nr","own":"AL/BH","bw":"Fri 8th","ac":[{"t":"AL site visit Friday 8th — finalise benchmark floor slab","d":false},{"t":"AL to pass key details to AM for connect + feedback","d":false}],"nt":""},{"id":13,"name":"Ebury Gate","fb":"nr","own":"AL","bw":"EoW","ac":[{"t":"Review tender + Stage 5 TBC (Ali to review fee proposal)","d":false},{"t":"AM follow up with Ali on Stage 5 if no answer by EoW + Tom White","d":false}],"nt":""},{"id":14,"name":"2 Trafalgar Way","fb":"nr","own":"AL","bw":"","ac":[{"t":"PM stepped in — requested Midgard to provide proper information","d":false}],"nt":""},{"id":15,"name":"1 Hannover Square","fb":"pd","own":"AL","bw":"","ac":[{"t":"New PM appointed — AM sent out Stage 5 fee proposal","d":false},{"t":"AM to touch base with George A&Y","d":false}],"nt":""},{"id":16,"name":"British Museum (Podium)","fb":"rc","own":"AL/AM","bw":"","ac":[{"t":"Wait for contractor response","d":false}],"nt":""},{"id":17,"name":"British Museum (Basement)","fb":"rc","own":"AL/AM","bw":"","ac":[{"t":"Requested additional input on current queries (solved)","d":true}],"nt":""},{"id":18,"name":"Golden Lane","fb":"nr","own":"BH/AM","bw":"TBC","ac":[{"t":"No update","d":false},{"t":"AM to review the PC (date TBC following receipt of outstanding information)","d":false},{"t":"AM — chasing Midgard (Thomas)","d":false}],"nt":""},{"id":19,"name":"1 Knightsbridge Green","fb":"nr","own":"AM/AL","bw":"","ac":[{"t":"AL working on Stage 3 pack","d":false},{"t":"Waiting on DT for coordinated model","d":false},{"t":"Request feedback by end of Stage 3","d":false}],"nt":""},{"id":20,"name":"Nottingham University","fb":"nr","own":"AM/JE","bw":"18th","ac":[{"t":"JE to prepare update report for Ben to review and finalise for issue","d":false}],"nt":""},{"id":21,"name":"Wembley Park","fb":"nr","own":"AM/AL","bw":"Early next week","ac":[{"t":"AM went on site — limited information available","d":false},{"t":"Report to go out early next week","d":false}],"nt":""}],"pipeline":[{"id":101,"name":"35 NBS","notes":""},{"id":102,"name":"Dorset House","notes":"Marcus to talk to people involved"},{"id":103,"name":"250/273 RS","notes":"Chase AM"},{"id":104,"name":"Crown Estate","notes":"Initial feedback positive — follow up with basement"},{"id":105,"name":"City of London","notes":"AM to follow up"},{"id":106,"name":"33 Cavendish Square","notes":"Email sent 5th"},{"id":107,"name":"Barbican","notes":"Fee proposal sent 5th May"},{"id":108,"name":"10 Lower Thames St","notes":""}]},"2026-05-17":{"metrics":{"q1Won":"198.3K","q1Left":"-3.4K","q2Won":"26.3K","q2Left":"168.7K","q1Avg":"46.7K","q2Avg":"25.3K","jan":"43.1K","feb":"47.4K","mar":"49.5K","apr":"32.5K","may":"27.0K","jun":"16.9K"},"liveJobs":[{"id":1,"name":"Saltwater","fb":"pd","own":"JE","bw":"EoW","ac":[{"t":"No update — send courtesy email by end of week","d":true},{"t":"JE send to AM contacts for feedback","d":true},{"t":"JE tried to catch up - expected call this afternoon (13th of May)","d":false},{"t":"Any additional work should be charged at HR - JE/AM (few hours of work)","d":false}],"nt":""},{"id":2,"name":"Oxford Park","fb":"rc","own":"JE","bw":"EoW","ac":[{"t":"JE waiting for follow-up site visit","d":true},{"t":"Site visit booked for Friday 15th (HR)","d":false}],"nt":""},{"id":3,"name":"Holden House","fb":"pd","own":"JE","bw":"Ongoing","ac":[{"t":"Meeting next week + Review (1 day of work)","d":true},{"t":"JE follow up on Julien — agreement on extra fee / design review","d":true},{"t":"JE initial review of drawings — hold comments until further instruction (JE starting reviewed the drawings)","d":false},{"t":"JE/AM tried to get in touch for the additional extra hours of work.","d":false},{"t":"JE to follow up to Design meeting - Get understanding of the ongoing work","d":false}],"nt":""},{"id":4,"name":"JESB","fb":"pd","own":"JE","bw":"","ac":[{"t":"Works potentially moved to end of summer","d":false},{"t":"AM check feedback lead with JE","d":false},{"t":"JE meeting last week - MS QS + CLW + Civil - agreed with hot melt system - JE followed up site visit (no following action)","d":false}],"nt":""},{"id":5,"name":"5 The Strand","fb":"nr","own":"JE/AM","bw":"Monday","ac":[{"t":"Ben discussed with Marcus — positive feedback","d":true},{"t":"Site visit to arrange on Monday","d":true},{"t":"Following site visit - JE to issue Site report","d":false},{"t":"Waiting Rascor design for new details around UKPN pipework - Potentially additional work","d":false}],"nt":""},{"id":6,"name":"33-35 Piccadilly","fb":"nr","own":"JE","bw":"","ac":[{"t":"Send request to Jessica","d":false},{"t":"Report sent following site visit — JE awaiting follow-up","d":true},{"t":"Received QA from site - JE to review","d":false},{"t":"Awaiting for next site visit","d":false}],"nt":""},{"id":7,"name":"10 Piccadilly","fb":"pd","own":"JE","bw":"","ac":[{"t":"Request new fee proposal for Stage 5 (Sent out)","d":true},{"t":"If no answer — follow up with call","d":true},{"t":"AM to give Nassim a call","d":false}],"nt":""},{"id":1778664139659,"name":"Ark","fb":"nr","own":"JE/AM","bw":"EoW","ac":[{"t":"JE to work on follow-up condition report and key actions for next stage","d":false},{"t":"AM/JE to review scope of site visit","d":false},{"t":"AM site visit this week","d":false},{"t":"AM/JE to follow up with report","d":false}],"nt":""},{"id":9,"name":"7 Ridgemont","fb":"pd","own":"JE/AM","bw":"June","ac":[{"t":"Stage 3 completed","d":true},{"t":"AM good conversation with Maddie — project to pick up in June","d":false},{"t":"AM to follow up on feedback requests","d":false}],"nt":"Project in Hold"},{"id":10,"name":"220 Blackfriars","fb":"hd","own":"AL","bw":"End May","ac":[{"t":"AL to follow up by end of May to arrange follow-up site visit - AL to follow up with call","d":false},{"t":"AM to ask — hold until resi completed","d":false},{"t":"AL - Expecting another review - TBC","d":false}],"nt":""},{"id":11,"name":"SSD","fb":"pd","own":"AL","bw":"","ac":[{"t":"Report out — no update","d":true},{"t":"AM to request feedback — AL to pass key contacts","d":true},{"t":"AL meeting - PCC tracker sent over to AECOM","d":false},{"t":"BH to be part of the last visit with team (TBC date)","d":false}],"nt":""},{"id":12,"name":"75LW","fb":"pd","own":"AL/BH","bw":"","ac":[{"t":"AL site visit Friday 8th — finalise benchmark floor slab","d":true},{"t":"AL to pass key details to AM for connect + feedback","d":true},{"t":"Benchmarks all signed off - AL asked for additional actions - To be updated with final picture","d":false},{"t":"Review of Type A info (AL/JE)","d":false}],"nt":""},{"id":13,"name":"Ebury Gate","fb":"pd","own":"AL","bw":"EoW","ac":[{"t":"Review tender + Stage 5 TBC (Ali to review fee proposal)","d":false},{"t":"AM follow up with Ali on Stage 5 if no answer by EoW + Tom White + Hanna","d":false},{"t":"","d":false}],"nt":""},{"id":14,"name":"2 Trafalgar Way","fb":"nr","own":"AL","bw":"","ac":[{"t":"PM stepped in — requested Midgard to provide proper information","d":true},{"t":"Requested meeting with Midguard - Waiting date for Team meeting (HR) - Ben to sit on the call","d":false}],"nt":""},{"id":15,"name":"1 Hannover Square","fb":"pd","own":"AL","bw":"EoW","ac":[{"t":"New PM appointed — AM sent out Stage 5 fee proposal","d":false},{"t":"AM to touch base with George A&Y","d":false},{"t":"AM - Call to SE + Architects","d":false}],"nt":""},{"id":16,"name":"British Museum (Podium)","fb":"rc","own":"AL/AM","bw":"","ac":[{"t":"Wait for contractor response","d":false}],"nt":""},{"id":17,"name":"British Museum (Basement)","fb":"rc","own":"AL/AM","bw":"","ac":[{"t":"Requested additional input on current queries (solved)","d":true}],"nt":""},{"id":18,"name":"Golden Lane","fb":"nr","own":"BH/AM","bw":"TBC","ac":[{"t":"No update","d":true},{"t":"AM to review the PC (date TBC following receipt of outstanding information)","d":false},{"t":"AM — chasing Midgard (Thomas)","d":false},{"t":"AM - To invoice half of the fee expected for the month","d":false},{"t":"AM sent out NCS","d":false}],"nt":""},{"id":19,"name":"1 Knightsbridge Green","fb":"nr","own":"AM/AL","bw":"","ac":[{"t":"AL working on Stage 3 pack","d":false},{"t":"Waiting on DT for coordinated model","d":false},{"t":"Request feedback by end of Stage 3","d":false},{"t":"No update - waiting info to complete Stage 3","d":false}],"nt":""},{"id":20,"name":"Nottingham University","fb":"nr","own":"AM/JE","bw":"End of May","ac":[{"t":"JE to prepare update report for Ben to review and finalise for issue","d":false},{"t":"JE to send the draft by EoW","d":false},{"t":"ben to review for final issue next week","d":false}],"nt":""},{"id":21,"name":"Wembley Park","fb":"nr","own":"AM/AL","bw":"Early next week","ac":[{"t":"AM went on site — limited information available","d":true},{"t":"Report to go out early next week","d":true},{"t":"Report sent out - Waiting for comments","d":false}],"nt":""},{"id":1778661952095,"name":"5-6 Stanhope Gate","fb":"nr","own":"JE","bw":"End of May","ac":[{"t":"JE on site - To follow up with report by end of May","d":false},{"t":"Ben - Find list of queries for pre-purchase solicitors","d":false}],"nt":""},{"id":1778666929681,"name":"78 St Albans Road","fb":"nr","own":"AD/AM","bw":"","ac":[{"t":"AL - site visit this Friday (15th)","d":false}],"nt":""}],"pipeline":[{"id":101,"name":"35 NBS","notes":""},{"id":102,"name":"Dorset House","notes":"Marcus to talk to people involved"},{"id":103,"name":"250/273 RS","notes":"Chase AM"},{"id":104,"name":"Crown Estate","notes":"Initial feedback positive — follow up with basement"},{"id":105,"name":"City of London","notes":"AM to follow up"},{"id":106,"name":"33 Cavendish Square","notes":"Email sent 5th"},{"id":107,"name":"Barbican","notes":"Fee proposal sent 5th May"},{"id":108,"name":"10 Lower Thames St","notes":""}]}};
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtM=ym=>{const[y,m]=ym.split('-');return MO[+m-1]+' '+y.slice(2)};
+const fmtGBP=v=>(!v||isNaN(v))?'—':'£'+Number(v).toLocaleString('en-GB',{maximumFractionDigits:0});
+const curYM=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
+const nextYM=(ym,n=1)=>{let[y,m]=ym.split('-').map(Number);m+=n;while(m>12){m-=12;y++}while(m<1){m+=12;y--}return`${y}-${String(m).padStart(2,'0')}`};
+const barClr=v=>v>=45000?'var(--green)':v>=40000?'var(--amber)':'var(--red)';
+const statC=v=>v>=45000?'cg':v>=40000?'ca':'cr';
+const DEFAULT_TC={Adam:'#006caa',Ben:'#1a7a4a',Johnny:'#5a4a8a',Andrea:'#b5451b'};
+let teamColors={...DEFAULT_TC};
+function mgrC(mgr){if(!mgr)return'#6b7580';if(teamColors[mgr])return teamColors[mgr];for(const[k,v]of Object.entries(teamColors))if(mgr.includes(k))return v;return'#6b7580'}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function getMon(d){const x=new Date(d),day=x.getDay();x.setDate(x.getDate()-day+(day===0?-6:1));x.setHours(0,0,0,0);return x}
+function wKey(m){return m.toISOString().slice(0,10)}
+function fmtWk(m){const e=new Date(m);e.setDate(e.getDate()+4);const o={day:'numeric',month:'short'};return`${m.toLocaleDateString('en-GB',o)} — ${e.toLocaleDateString('en-GB',o)} ${m.getFullYear()}`}
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let projects=[],scorecard={},qtrWeeks={},teamPeople=['Adam','Ben','Johnny','Andrea'];
+let editId=null,isProspect=false,unsaved=false,loadedFileName='';
+let showCompleted=false,dragState=null;
+let undoStack=[],_undoing=false;
+const MAX_UNDO=100;
+
+// L10 state
+let curMon=getMon(new Date());
+let L10D=null; // current week's L10 data
+
+// ═══════════════════════════════════════════════════════════
+// UNDO
+// ═══════════════════════════════════════════════════════════
+function snapshotState(){return JSON.parse(JSON.stringify(projects))}
+function pushUndo(label){if(_undoing)return;undoStack.push({snap:snapshotState(),label});if(undoStack.length>MAX_UNDO)undoStack.shift();updateUndoUI()}
+function undo(){if(!undoStack.length)return;_undoing=true;const{snap,label}=undoStack.pop();projects=snap;_undoing=false;renderTable();renderDashboard();updateUndoUI();showToast('↩ Undone: '+label,'ok');saveAll();}
+function updateUndoUI(){const n=undoStack.length,on=n>0;['undo-btn','undo-btn2'].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.disabled=!on;el.style.opacity=on?'1':'.4';el.style.cursor=on?'pointer':'default'})}
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){e.preventDefault();undo()}});
+
+// ═══════════════════════════════════════════════════════════
+// UNSAVED TRACKING
+// ═══════════════════════════════════════════════════════════
+function markUnsaved(){unsaved=true;updateFst()}
+function markSaved(){unsaved=false;updateFst()}
+function updateFst(){
+  const el=document.getElementById('fstatus');if(!el)return;
+  const n=loadedFileName||'embedded data';
+  el.innerHTML=unsaved?`<span class="udot"></span><span class="fn">${n}</span><br><span style="color:rgba(255,213,0,.85)">Unsaved changes</span>`:`<span class="fn">${n}</span><br>Saved`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════════
+function nav(id){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.ni').forEach(n=>{if(n.getAttribute('onclick')?.includes("'"+id+"'"))n.classList.add('active');});
+  ({dashboard:renderDashboard,l10:openL10Tab,projects:renderTable,pipeline:renderPipeline,scorecard:renderScorecard,wheels:renderWheels})[id]?.();
+}
+
+// ═══════════════════════════════════════════════════════════
+// STARTUP
+// ═══════════════════════════════════════════════════════════
+function startFresh(){
+  projects=JSON.parse(JSON.stringify(SEED_P));
+  scorecard=JSON.parse(JSON.stringify(SEED_SC));
+  qtrWeeks=JSON.parse(JSON.stringify(SEED_QW));
+  teamColors={...DEFAULT_TC};teamPeople=['Adam','Ben','Johnny','Andrea'];
+  loadedFileName='embedded data';launch();markSaved();
+}
+function launch(){
+  document.getElementById('ls').classList.add('hidden');
+  document.getElementById('app').style.display='flex';
+  curMon=getMon(new Date());
+  L10D=l10GetWkData(curMon);
+  syncManagerDropdowns();populateQtrSelect();renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function computeFeePerf(){
+  const live=projects.filter(p=>!p.prospective&&(p.status||'live')!=='complete');
+  function mT(ym){return live.reduce((s,p)=>s+((p.fees&&p.fees[ym])?+p.fees[ym]:0),0);}
+  const jan=mT('2026-01'),feb=mT('2026-02'),mar=mT('2026-03');
+  const apr=mT('2026-04'),may=mT('2026-05'),jun=mT('2026-06');
+  const q1=jan+feb+mar,q2=apr+may+jun,tgt=195000;
+  const fmt=v=>v>=1000?'£'+(v/1000).toFixed(1)+'K':'£'+Math.round(v);
+  return{q1Won:fmt(q1),q1Left:fmt(Math.max(0,tgt-q1)),q2Won:fmt(q2),q2Left:fmt(Math.max(0,tgt-q2)),
+    q1Avg:fmt(q1/3),q2Avg:fmt(q2/3),jan:fmt(jan),feb:fmt(feb),mar:fmt(mar),apr:fmt(apr),may:fmt(may),jun:fmt(jun)};
+}
+function renderDashboard(){
+  document.getElementById('dash-date').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const ym=curYM(),nm=nextYM(ym);
+  const live=projects.filter(p=>!p.prospective&&(p.status||'live')!=='complete');
+  const pipe=projects.filter(p=>p.prospective);
+  const thisM=live.reduce((s,p)=>s+((p.fees&&p.fees[ym])?+p.fees[ym]:0),0);
+  const nextM=live.reduce((s,p)=>s+((p.fees&&p.fees[nm])?+p.fees[nm]:0),0);
+  const pipeV=pipe.reduce((s,p)=>s+(+p.agreed||0)+(+p.toAgree||0),0);
+  document.getElementById('stat-grid').innerHTML=`
+    <div class="sc cb"><div class="slbl">Active Projects</div><div class="sval">${live.length}</div><div class="ssub">confirmed</div></div>
+    <div class="sc ${statC(thisM)}"><div class="slbl">This Month — ${fmtM(ym)}</div><div class="sval">${fmtGBP(thisM)}</div><div class="ssub">${thisM>=45000?'✓ Above target':thisM>=40000?'⚠ Near':'✗ Below'}</div></div>
+    <div class="sc ${statC(nextM)}"><div class="slbl">Next Month — ${fmtM(nm)}</div><div class="sval">${fmtGBP(nextM)}</div><div class="ssub">${nextM>=45000?'✓ Above':nextM>=40000?'⚠ Near':'✗ Below'}</div></div>
+    <div class="sc cm"><div class="slbl">Pipeline Value</div><div class="sval">${fmtGBP(pipeV)}</div><div class="ssub">${pipe.length} prospects</div></div>`;
+  const fp=computeFeePerf();
+  document.getElementById('dash-qtr-label').textContent='From Project Forecast';
+  document.getElementById('dash-l10-metrics').innerHTML=`
+    <div class="m-card"><div class="m-label">Q1 2026</div><div class="m-val mblue">${fp.q1Won}</div><div class="m-sub">Left: ${fp.q1Left}</div></div>
+    <div class="m-card"><div class="m-label">Q2 2026</div><div class="m-val mblue">${fp.q2Won}</div><div class="m-sub">Left: ${fp.q2Left}</div></div>
+    <div class="m-card"><div class="m-label">Q1 Avg</div><div class="m-val">${fp.q1Avg}</div><div class="m-sub">Jan ${fp.jan} · Feb ${fp.feb} · Mar ${fp.mar}</div></div>
+    <div class="m-card"><div class="m-label">Q2 Avg</div><div class="m-val">${fp.q2Avg}</div><div class="m-sub">Apr ${fp.apr} · May ${fp.may} · Jun ${fp.jun}</div></div>`;
+  const makeList=(items,mth)=>items.length?items.sort((a,b)=>b.fees[mth]-a.fees[mth]).map(p=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 14px;border-bottom:1px solid #f0f2f4">
+      <div style="display:flex;align-items:center;gap:7px">
+        <div style="width:3px;height:20px;border-radius:2px;background:${mgrC(p.manager)};flex-shrink:0"></div>
+        <div><div style="font-size:12px;font-weight:600">${esc(p.name)}</div><div style="font-size:10px;color:var(--grey-d)">${esc(p.manager||'—')}</div></div>
+      </div>
+      <div style="font-family:'Courier New',monospace;font-size:12px;font-weight:700;color:var(--blue)">${fmtGBP(p.fees[mth])}</div>
+    </div>`).join(''):'<div style="text-align:center;padding:16px;color:var(--grey-m);font-size:11px">No fees this month</div>';
+  document.getElementById('this-month').innerHTML=makeList(live.filter(p=>p.fees&&p.fees[ym]&&+p.fees[ym]>0),ym);
+  document.getElementById('next-month').innerHTML=makeList(live.filter(p=>p.fees&&p.fees[nm]&&+p.fees[nm]>0),nm);
+  renderChart('dash-chart');
+}
+function renderChart(cid){
+  const live=projects.filter(p=>!p.prospective&&(p.status||'live')!=='complete');
+  const cur=curYM();
+  const months=Array.from({length:19},(_,i)=>nextYM(cur,i-6));
+  const data=months.map(ym=>({ym,total:live.reduce((s,p)=>s+((p.fees&&p.fees[ym])?+p.fees[ym]:0),0),isPast:ym<cur}));
+  const max=Math.max(...data.map(d=>d.total),45000,1);
+  const tH=(45000/max)*130;
+  let prevYr='',h=`<div class="cbars"><div class="tl" style="bottom:${tH+28}px"><div class="tll">£45k target</div></div>`;
+  data.forEach(d=>{
+    const ht=max>0?(d.total/max)*130:0,isCur=d.ym===cur,yr=d.ym.split('-')[0];
+    if(yr!==prevYr){h+=`<div class="yr-sep">${yr}</div>`;prevYr=yr;}
+    const col=d.isPast?'var(--grey-m)':barClr(d.total);
+    h+=`<div class="bg3"><div class="bv" style="${d.isPast?'color:var(--grey-m)':''}">${d.total>0?fmtGBP(d.total):''}</div><div class="b" style="height:${Math.max(ht,2)}px;background:${col};opacity:${d.isPast?'.5':'1'};${isCur?'outline:2px solid var(--blue);outline-offset:2px':''}"></div><div class="bl" style="${d.isPast?'color:var(--grey-m)':''}">${MO[+d.ym.split('-')[1]-1]}</div></div>`;
+  });
+  h+='</div>';
+  const el=document.getElementById(cid);if(el)el.innerHTML=h;
+}
+
+// ═══════════════════════════════════════════════════════════
+// L10 TRACKER
+// ═══════════════════════════════════════════════════════════
+const FBL={nr:'Not Requested',pd:'Pending',rc:'Received',hd:'Hold'};
+const FBC={nr:'fb-nr',pd:'fb-pd',rc:'fb-rc',hd:'fb-hd'};
+const FBX=['nr','pd','rc','hd'];
+
+// ── L10 Storage ───────────────────────────────────────────
+const L10_SK='clw_l10_v2';
+function l10LoadAll(){try{const r=localStorage.getItem(L10_SK);return r?JSON.parse(r):{}}catch(e){return{}}}
+function l10SaveAll(a){try{localStorage.setItem(L10_SK,JSON.stringify(a))}catch(e){}}
+function l10GetWkData(mon){
+  const all=l10LoadAll(), k=wKey(mon);
+  if(all[k]) return JSON.parse(JSON.stringify(all[k]));
+  // Check seed data for this exact week
+  if(SEED_L10[k]) return JSON.parse(JSON.stringify(SEED_L10[k]));
+  // New week = empty. Only actions moved via button carry forward.
+  return {liveJobs:[], pipeline:[]};
+}
+function l10SaveWkData(mon,d){const all=l10LoadAll();all[wKey(mon)]=JSON.parse(JSON.stringify(d));l10SaveAll(all);}
+function l10AutoSave(){
+  if(!L10D) return;
+  l10SaveWkData(curMon, L10D);
+  document.getElementById('last-saved-l10').textContent='Saved '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  const ind=document.getElementById('l10-saved-ind');
+  if(ind){ind.classList.add('show');setTimeout(()=>ind.classList.remove('show'),2000);}
+}
+let _l10Timer=null;
+function l10QueueSave(){clearTimeout(_l10Timer);_l10Timer=setTimeout(()=>{l10AutoSave();saveAll();},1200);}
+
+// ── L10 Nav ───────────────────────────────────────────────
+// openL10Tab: called from sidebar — always jump to today
+function openL10Tab(){
+  curMon = getMon(new Date());
+  L10D = l10GetWkData(curMon);
+  renderL10();
+}
+// changeWeek: move forward/back without resetting
+function changeWeek(d){
+  l10AutoSave();
+  curMon = getMon(new Date(curMon.getTime() + d*7*86400000));
+  L10D = l10GetWkData(curMon);
+  renderL10();
+}
+function jumpToToday(){
+  l10AutoSave();
+  curMon = getMon(new Date());
+  L10D = l10GetWkData(curMon);
+  renderL10();
+}
+
+// ── L10 Render ────────────────────────────────────────────
+function renderL10(){
+  if(!L10D) L10D = l10GetWkData(curMon);
+  document.getElementById('week-label').textContent = fmtWk(curMon);
+  rL10Metrics();
+  rL10Jobs();
+  rL10Pipe();
+}
+
+function rL10Metrics(){
+  // Auto-derive from project fees (same data as Forecast tab)
+  const live=projects.filter(p=>!p.prospective&&(p.status||'live')!=='complete');
+  function mTotal(ym){return live.reduce((s,p)=>s+((p.fees&&p.fees[ym])?+p.fees[ym]:0),0);}
+  const jan=mTotal('2026-01'),feb=mTotal('2026-02'),mar=mTotal('2026-03');
+  const apr=mTotal('2026-04'),may=mTotal('2026-05'),jun=mTotal('2026-06');
+  const q1=jan+feb+mar, q2=apr+may+jun;
+  const tgt=(scorecard['Q2-2026']?.Ben?.target)||195000;
+  const fmt=v=>v>=1000?'£'+(v/1000).toFixed(1)+'K':'£'+Math.round(v);
+  document.getElementById('l10-metrics-grid').innerHTML=`
+    <div class="m-card"><div class="m-label">Q1 Invoiced</div><div class="m-val mblue">${fmt(q1)}</div><div class="m-sub">vs £${Math.round(tgt/1000)}K target</div></div>
+    <div class="m-card"><div class="m-label">Q1 Left to Win</div><div class="m-val ${q1>=tgt?'mgreen':'mred'}">${q1>=tgt?'✓ Hit':'£'+Math.round((tgt-q1)/1000)+'K'}</div><div class="m-sub">${q1>=tgt?'Target reached':'remaining'}</div></div>
+    <div class="m-card"><div class="m-label">Q2 Invoiced</div><div class="m-val mblue">${fmt(q2)}</div><div class="m-sub">Left: ${fmt(Math.max(0,tgt-q2))}</div></div>
+    <div class="m-card"><div class="m-label">Q2 Monthly Avg</div><div class="m-val">${fmt(q2/3)}</div><div class="m-sub">Apr ${fmt(apr)} · May ${fmt(may)} · Jun ${fmt(jun)}</div></div>
+    <div class="m-card"><div class="m-label">Jan</div><div class="m-val">${fmt(jan)}</div></div>
+    <div class="m-card"><div class="m-label">Feb</div><div class="m-val">${fmt(feb)}</div></div>
+    <div class="m-card"><div class="m-label">Mar</div><div class="m-val">${fmt(mar)}</div></div>
+    <div class="m-card"><div class="m-label">Apr</div><div class="m-val">${fmt(apr)}</div></div>`;
+}
+
+// Get this month's billing for a project name
+function getProjectBilling(name){
+  const ym=curYM();
+  const p=projects.filter(x=>!x.prospective).find(x=>x.name.toLowerCase().includes(name.toLowerCase().split(' ')[0].toLowerCase()));
+  return p&&p.fees&&p.fees[ym]?+p.fees[ym]:null;
+}
+
+function rL10Jobs(){
+  const js=L10D.liveJobs||[];
+  document.getElementById('l10-live-count').textContent=js.length+' projects';
+  // Previous week data for comparison
+  const prevMon=getMon(new Date(curMon.getTime()-7*86400000));
+  const prevData=l10GetWkData(prevMon);
+  const prevJobMap={};
+  (prevData.liveJobs||[]).forEach(j=>{prevJobMap[j.name]=j;});
+
+  document.getElementById('l10-tbody').innerHTML=js.map((j,i)=>{
+    const billing=getProjectBilling(j.name);
+    const prevJob=prevJobMap[j.name];
+    const prevTexts=new Set((prevJob?.ac||[]).map(a=>a.t));
+
+    const rows=(j.ac||[]).filter(a=>a.t).map((a,ai)=>{
+      const fromPrev=prevTexts.has(a.t);
+      const stale=fromPrev&&!a.d;
+      return `<li style="display:flex;align-items:flex-start;gap:6px;padding:3px 4px;border-radius:2px;margin-bottom:2px;${stale?'background:rgba(196,122,0,.07);border-left:2px solid var(--amber);':''}">
+        <input type="checkbox" style="margin-top:3px;accent-color:var(--blue);flex-shrink:0" ${a.d?'checked':''} onchange="togL10Ac(${i},${ai},this.checked)">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+            <span style="font-size:11.5px;${a.d?'text-decoration:line-through;opacity:.4':''}" contenteditable="true" onblur="upL10Ac(${i},${ai},this.textContent)">${esc(a.t)}</span>
+            ${stale?'<span style="font-size:8px;background:var(--amber-bg);color:var(--amber);padding:1px 5px;border-radius:10px;font-weight:700">PREV WEEK</span>':''}
+            ${a.owner?`<span style="font-size:8px;background:var(--blue-p);color:var(--blue);padding:1px 5px;border-radius:10px;font-weight:700">${esc(a.owner)}</span>`:''}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:2px">
+            <input placeholder="assign to…" value="${esc(a.owner||'')}" style="font-size:9px;border:none;border-bottom:1px dashed var(--bdr);outline:none;width:70px;background:transparent" onblur="L10D.liveJobs[${i}].ac[${ai}].owner=this.value;l10QueueSave()">
+            <button onclick="moveActionNext(${i},${ai})" style="font-size:8px;font-weight:700;background:none;border:none;cursor:pointer;color:var(--blue)">→ Next week</button>
+            ${a.d?`<button onclick="delL10Ac(${i},${ai})" style="font-size:8px;font-weight:700;background:none;border:none;cursor:pointer;color:var(--red)">✕ delete</button>`:''}
+          </div>
+        </div>
+      </li>`;
+    }).join('');
+
+    return `<tr>
+      <td>
+        <div style="font-family:var(--fc);font-size:14px;font-weight:700">${esc(j.name)}</div>
+        ${billing?`<div style="font-size:10px;font-weight:700;color:var(--blue);font-family:'Courier New',monospace;margin-top:2px">This month: ${fmtGBP(billing)}</div>`:''}
+        <div style="display:flex;gap:6px;margin-top:3px">
+          <button onclick="editL10Proj(${i})" style="font-size:9px;font-weight:700;background:none;border:none;cursor:pointer;color:var(--grey-d)">✎ Edit</button>
+          <button onclick="rmL10Proj(${i})" style="font-size:9px;font-weight:700;background:none;border:none;cursor:pointer;color:var(--red)">✕ Remove</button>
+        </div>
+      </td>
+      <td><span class="fb-badge ${FBC[j.fb]}" onclick="cycleL10Fb(${i})">${FBL[j.fb]}</span></td>
+      <td><span style="font-family:var(--fc);font-size:12px;font-weight:700;color:white;background:var(--blue);padding:2px 8px;border-radius:2px">${esc(j.own||'—')}</span></td>
+      <td>
+        <ul style="list-style:none" id="l10al${i}">${rows}</ul>
+        <button onclick="addL10Ac(${i})" style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--grey-m);background:none;border:none;cursor:pointer;margin-top:2px">+ Add Action</button>
+      </td>
+      <td><div contenteditable="true" style="font-size:11px;color:var(--grey-m);font-style:italic;min-height:17px" onblur="L10D.liveJobs[${i}].nt=this.textContent;l10QueueSave()">${esc(j.nt)||''}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function rL10Pipe(){
+  // Auto-pull from Pipeline tab projects
+  const pipeForecast=projects.filter(p=>p.prospective);
+  const l10Pipe=(L10D.pipeline||[]);
+  const merged=[
+    ...pipeForecast.map(p=>({id:p.id,name:p.name,notes:p.notes||p.stage||'',value:(+p.agreed||0)+(+p.toAgree||0),fromForecast:true})),
+    ...l10Pipe.filter(p=>!pipeForecast.find(f=>f.name===p.name))
+  ];
+  document.getElementById('l10-pipe-count').textContent=merged.length+' prospects';
+  document.getElementById('l10-pipe-grid').innerHTML=merged.map((p,i)=>`
+    <div class="pipe-item-l10">
+      <div class="pipe-dot-l10"></div>
+      <div style="flex:1">
+        <div class="pipe-name-l10">${esc(p.name)}</div>
+        ${p.value?`<div style="font-size:10px;font-weight:700;color:var(--amber);font-family:'Courier New',monospace">${fmtGBP(p.value)}</div>`:''}
+        ${p.notes?`<div class="pipe-notes-l10">${esc(p.notes)}</div>`:''}
+        ${p.fromForecast?`<div style="font-size:8px;color:var(--blue);margin-top:2px">← Pipeline tab</div>`:''}
+      </div>
+      ${!p.fromForecast?`<button onclick="event.stopPropagation();rmL10Pipe(${i})" style="background:none;border:none;cursor:pointer;color:var(--grey-m);font-size:10px">✕</button>`:''}
+    </div>`).join('')+`
+    <div class="pipe-item-l10 pipe-add-l10" onclick="addL10Pipe()">
+      <div class="pipe-dot-l10" style="background:var(--grey-m)"></div>
+      <span style="color:var(--grey-m);font-size:12px">+ Add prospect</span>
+    </div>`;
+}
+
+// ── L10 Mutations ─────────────────────────────────────────
+function cycleL10Fb(i){const c=FBX,x=c.indexOf(L10D.liveJobs[i].fb);L10D.liveJobs[i].fb=c[(x+1)%c.length];rL10Jobs();l10QueueSave();}
+function togL10Ac(i,ai,v){L10D.liveJobs[i].ac[ai].d=v;rL10Jobs();l10QueueSave();}
+function upL10Ac(i,ai,v){if(L10D.liveJobs[i]&&L10D.liveJobs[i].ac[ai])L10D.liveJobs[i].ac[ai].t=v.trim();l10QueueSave();}
+function addL10Ac(i){L10D.liveJobs[i].ac.push({t:'New action',d:false,owner:''});rL10Jobs();l10QueueSave();}
+function delL10Ac(i,ai){L10D.liveJobs[i].ac.splice(ai,1);rL10Jobs();l10QueueSave();}
+function rmL10Proj(i){if(!confirm('Remove "'+L10D.liveJobs[i].name+'"?'))return;L10D.liveJobs.splice(i,1);rL10Jobs();l10QueueSave();}
+function rmL10Pipe(i){L10D.pipeline.splice(i,1);rL10Pipe();l10QueueSave();}
+function addL10Pipe(){const n=prompt('Prospect name:');if(!n)return;const nt=prompt('Notes:')||'';L10D.pipeline.push({id:Date.now(),name:n,notes:nt});rL10Pipe();l10QueueSave();}
+function moveActionNext(jobIdx,acIdx){
+  const ac=JSON.parse(JSON.stringify(L10D.liveJobs[jobIdx].ac[acIdx]));
+  const job=L10D.liveJobs[jobIdx];
+  const nextMon=getMon(new Date(curMon.getTime()+7*86400000));
+  const nextData=l10GetWkData(nextMon);
+  let tgtJob=(nextData.liveJobs||[]).find(x=>x.name===job.name);
+  if(!tgtJob){tgtJob={...job,ac:[]};nextData.liveJobs=nextData.liveJobs||[];nextData.liveJobs.push(tgtJob);}
+  ac.d=false;
+  if(!tgtJob.ac.some(a=>a.t===ac.t))tgtJob.ac.push(ac);
+  l10SaveWkData(nextMon,nextData);
+  showToast('Action moved to next week','ok');
+}
+function editL10Proj(i){
+  const j=L10D.liveJobs[i];
+  document.getElementById('l10-modal-title').textContent='Edit Project';
+  document.getElementById('l10-edit-idx').value=i;
+  document.getElementById('lf-name').value=j.name;
+  document.getElementById('lf-fb').value=j.fb;
+  document.getElementById('lf-own').value=j.own||'';
+  const bwEl=document.getElementById('lf-bw');if(bwEl)bwEl.value=j.bw||'';
+  document.getElementById('lf-ac').value=(j.ac||[]).map(a=>a.t).join('\n');
+  const ntEl=document.getElementById('lf-nt');if(ntEl)ntEl.value=j.nt||'';
+  document.getElementById('lf-type').value='live';
+  document.getElementById('l10-proj-modal').classList.add('open');
+}
+function openAddL10Project(){
+  document.getElementById('l10-modal-title').textContent='Add Project';
+  document.getElementById('l10-edit-idx').value='';
+  ['lf-name','lf-own','lf-bw','lf-ac','lf-nt'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('lf-fb').value='nr';
+  document.getElementById('lf-type').value='live';
+  document.getElementById('l10-proj-modal').classList.add('open');
+}
+function saveL10Project(){
+  const is=document.getElementById('l10-edit-idx').value;
+  const name=document.getElementById('lf-name').value.trim();
+  if(!name){alert('Name required');return;}
+  const bwEl=document.getElementById('lf-bw');
+  const ntEl=document.getElementById('lf-nt');
+  const p={id:Date.now(),name,fb:document.getElementById('lf-fb').value,own:document.getElementById('lf-own').value.trim(),bw:bwEl?bwEl.value.trim():'',ac:document.getElementById('lf-ac').value.split('\n').filter(Boolean).map(t=>({t:t.trim(),d:false,owner:''})),nt:ntEl?ntEl.value.trim():''};
+  const tp=document.getElementById('lf-type').value;
+  if(is!=='')L10D.liveJobs[parseInt(is)]={...L10D.liveJobs[parseInt(is)],...p};
+  else if(tp==='pipeline'){L10D.pipeline=L10D.pipeline||[];L10D.pipeline.push({id:p.id,name:p.name,notes:p.nt});}
+  else{L10D.liveJobs=L10D.liveJobs||[];L10D.liveJobs.push(p);}
+  closeModal('l10-proj-modal');
+  renderL10();
+  l10QueueSave();
+}
+// L10 Report
+function openL10Report(){document.getElementById('report-content').textContent=buildL10Report();document.getElementById('report-modal').classList.add('open');}
+function buildL10Report(){
+  const wk=fmtWk(curMon),L='─'.repeat(60);
+  let o=['CLW — CSSW LONDON WATERPROOFING','L10 WEEKLY LEADERSHIP REPORT','Week of: '+wk,L,''];
+  o.push('LIVE JOBS','─'.repeat(40));
+  (L10D.liveJobs||[]).forEach(j=>{
+    o.push('');
+    o.push('▸ '+j.name.toUpperCase()+'  |  Feedback: '+(FBL[j.fb]||'').toUpperCase()+'  |  Owner: '+(j.own||''));
+    (j.ac||[]).forEach(a=>o.push('  '+(a.d?'[✓]':'[ ]')+' '+a.t+(a.owner?' ('+a.owner+')':'')));
+  });
+  o.push('','PIPELINE','─'.repeat(40));
+  (L10D.pipeline||[]).forEach(p=>o.push('  · '+p.name+(p.notes?' — '+p.notes:'')));
+  o.push('',L,'For and on behalf of CLW — CSSW London Waterproofing');
+  return o.join('\n');
+}
+function copyReport(){navigator.clipboard.writeText(document.getElementById('report-content').textContent).then(()=>showToast('Copied','ok'));}
+function dlReport(){const b=new Blob([document.getElementById('report-content').textContent],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='CLW_L10_'+wKey(curMon)+'.txt';a.click();}
+
+// ═══════════════════════════════════════════════════════════
+// FORECAST TABLE
+// ═══════════════════════════════════════════════════════════
+function getInvState(p,ym){return(p.invState&&p.invState[ym])||'forecast';}
+function setInvState(p,ym,state){if(!p.invState)p.invState={};p.invState[ym]=state;}
+function getEffectiveState(p,ym){
+  const s=getInvState(p,ym);
+  if(s==='forecast'&&ym<curYM())return'overdue';
+  return s;
+}
+
+function getTableMonths(){
+  const showPast=document.getElementById('fc-show-past')?.checked;
+  const conf=projects.filter(p=>!p.prospective&&(p.status||'live')!=='complete');
+  const all=new Set();
+  conf.forEach(p=>Object.keys(p.fees||{}).forEach(m=>all.add(m)));
+  const cur=curYM();
+  for(let i=-1;i<18;i++)all.add(nextYM(cur,i));
+  let months=[...all].sort();
+  if(!showPast)months=months.filter(m=>m>=nextYM(cur,-1));
+  return months.filter(m=>{
+    const hasFee=conf.some(p=>p.fees&&p.fees[m]&&+p.fees[m]>0);
+    return hasFee||m>=cur;
+  });
+}
+
+// Left to invoice = agreed minus what is already paid or issued
+// Forecasted amounts still count as left to invoice
+function calcLeftToInvoice(p){
+  const agreed=(+p.agreed||0)+(+p.toAgree||0);
+  if(!agreed) return null;
+  const done=Object.entries(p.invState||{}).reduce((s,[ym,st])=>{
+    if(st==='paid'||st==='issued') return s+((p.fees&&p.fees[ym])?+p.fees[ym]:0);
+    return s;
+  },0);
+  return agreed-done;
+}
+
+function renderTable(){
+  const search=(document.getElementById('fc-search')?.value||'').toLowerCase();
+  const mgr=document.getElementById('fc-mgr')?.value||'';
+  const stFilter=document.getElementById('fc-status-filter')?.value||'';
+  const invFilter=document.getElementById('fc-inv-filter')?.value||'';
+  const cur=curYM(), months=getTableMonths();
+
+  let conf=projects.filter(p=>!p.prospective&&(p.status||'live')!=='complete');
+  if(search)conf=conf.filter(p=>p.name.toLowerCase().includes(search)||(p.client||'').toLowerCase().includes(search));
+  if(mgr)conf=conf.filter(p=>p.manager&&p.manager.includes(mgr));
+  if(stFilter==='hr')conf=conf.filter(p=>p.hourlyRate);
+  else if(stFilter)conf=conf.filter(p=>(p.status||'live')===stFilter);
+  if(invFilter)conf=conf.filter(p=>months.some(m=>{
+    const v=p.fees&&p.fees[m]&&+p.fees[m]>0;
+    return v&&getEffectiveState(p,m)===invFilter;
+  }));
+
+  // Build header
+  let prevYr='';
+  let thRow='<tr><th class="col-name">Project · Fees</th><th class="col-mgr">Manager</th><th class="col-st">Status</th>';
+  months.forEach(m=>{
+    const yr=m.split('-')[0]; const isCur=m===cur;
+    const cls=isCur?'col-m col-cur':'col-m';
+    if(yr!==prevYr&&!isCur){thRow+=`<th class="${cls}" style="border-left:2px solid var(--blue-p);color:var(--blue)">${yr}</th>`;prevYr=yr;}
+    else thRow+=`<th class="${cls}">${MO[+m.split('-')[1]-1]}${isCur?'<br><span style="font-size:7px;color:var(--blue);font-weight:800">◆</span>':''}</th>`;
+  });
+  thRow+='<th class="col-total">Total</th></tr>';
+  document.getElementById('fc-thead').innerHTML=thRow;
+
+  const live=conf.filter(p=>(p.status||'live')==='live');
+  const hold=conf.filter(p=>p.status==='hold');
+
+  function buildRow(p){
+    const st=p.status||'live', isHold=st==='hold';
+    const wt=months.reduce((s,m)=>s+((p.fees&&p.fees[m])?+p.fees[m]:0),0);
+    const stgl=`<div class="stgl">
+      <span onclick="setStatus('${p.id}','live')" class="${st==='live'?'on-live':''}" title="Live">●</span>
+      <span onclick="setStatus('${p.id}','hold')" class="${st==='hold'?'on-hold':''}" title="Hold">⏸</span>
+      <span onclick="setStatus('${p.id}','complete')" class="${st==='complete'?'on-complete':''}" title="Done">✓</span>
+    </div>`;
+
+    const cells=months.map(m=>{
+      const v=(p.fees&&p.fees[m])?+p.fees[m]:0;
+      const isCur=m===cur;
+      const effState=v>0?getEffectiveState(p,m):null;
+      const isHR=p.hourlyRate;
+      let cell;
+      if(v>0){
+        cell=`<div class="inv-cell ${effState}${isHR?' hr-cell':''}"
+          draggable="true"
+          ondragstart="onCellDragStart(event,'${p.id}','${m}',${v})"
+          ondragend="onCellDragEnd(event)"
+          ondragover="onCellDragOver(event,'${m}')"
+          ondrop="onCellDrop(event,'${p.id}','${m}')"
+          oncontextmenu="showCtxMenu(event,'${p.id}','${m}')"
+          onclick="cycleInvState('${p.id}','${m}')"
+          title="Click: cycle status. Right-click: menu. Drag: move."
+        >${fmtGBP(v)}${isHR?'<span style="font-size:7px;vertical-align:super"> HR</span>':''}</div>`;
+      } else {
+        cell=`<div class="inv-cell empty"
+          ondragover="onCellDragOver(event,'${m}')"
+          ondrop="onCellDrop(event,'${p.id}','${m}')"
+          onclick="promptNewFee('${p.id}','${m}')"
+          title="Click to add or drop here">+</div>`;
+      }
+      return`<td class="col-m${isCur?' col-cur':''}" style="${isHold?'opacity:.5':''}">${cell}</td>`;
+    }).join('');
+
+    const agreed=+p.agreed||0, toAgree=+p.toAgree||0;
+    const totalSched=Object.values(p.fees||{}).reduce((s,v)=>s+(+v||0),0);
+    const left=calcLeftToInvoice(p);
+    const isHRBadge=p.hourlyRate?`<span style="font-size:8px;background:var(--purple-bg);color:var(--purple);padding:1px 5px;border-radius:10px;font-weight:700;margin-left:3px">HR</span>`:'';
+
+    const feeSummary=`<div class="fee-summary"><div class="fee-divider"></div>
+      ${agreed>0?`<div class="fee-row r-agreed"><span class="fee-lbl">Agreed</span><span class="fee-amt">${fmtGBP(agreed)}</span></div>`:''}
+      ${toAgree>0?`<div class="fee-row"><span class="fee-lbl" style="color:var(--purple)">To agree</span><span class="fee-amt" style="color:var(--purple)">${fmtGBP(toAgree)}</span></div>`:''}
+      <div class="fee-row r-invoiced"><span class="fee-lbl">Scheduled</span><span class="fee-amt">${fmtGBP(totalSched)}</span></div>
+      ${left!==null?`<div class="fee-row"><span class="fee-lbl">Left to invoice</span><span class="fee-amt" style="color:${left<=0?'var(--green)':left<5000?'var(--amber)':'var(--blue)'};font-weight:700">${left<=0?'✓ Done':fmtGBP(left)}</span></div>`:''}
+    </div>`;
+
+    return`<tr class="${isHold?'row-hold':''}" data-id="${p.id}">
+      <td class="col-name" title="${esc(p.client||'')}">
+        <span>${esc(p.name)}</span>${isHRBadge}
+        <div style="display:flex;gap:4px;margin-top:3px">
+          <button class="btn btn-s btn-xs" onclick="openEdit('${p.id}')">Edit</button>
+          <button class="btn btn-d btn-xs" onclick="delProj('${p.id}')">✕</button>
+        </div>
+        ${feeSummary}
+      </td>
+      <td class="col-mgr"><div class="mp"><div class="md" style="background:${mgrC(p.manager)}"></div>${esc((p.manager||'—').split('/')[0].trim())}</div></td>
+      <td class="col-st">${stgl}</td>
+      ${cells}
+      <td class="col-total">${fmtGBP(wt)}</td>
+    </tr>`;
+  }
+
+  let tbody='';
+  if(live.length){tbody+=`<tr class="row-section"><td colspan="${months.length+4}">Live (${live.length})</td></tr>`;tbody+=live.map(buildRow).join('');}
+  if(hold.length){tbody+=`<tr class="row-section"><td colspan="${months.length+4}">On Hold (${hold.length})</td></tr>`;tbody+=hold.map(buildRow).join('');}
+
+  const allComp=projects.filter(p=>!p.prospective&&p.status==='complete');
+  let filtComp=allComp;
+  if(search)filtComp=filtComp.filter(p=>p.name.toLowerCase().includes(search));
+  if(mgr)filtComp=filtComp.filter(p=>p.manager&&p.manager.includes(mgr));
+  if(filtComp.length){
+    tbody+=`<tr class="row-section" onclick="toggleCompleted()"><td colspan="${months.length+4}">✓ Completed (${filtComp.length}) — ${showCompleted?'hide':'show'}</td></tr>`;
+    if(showCompleted)tbody+=filtComp.map(buildRow).join('');
+  }
+
+  let gt=0;
+  const totCells=months.map(m=>{
+    const t=live.reduce((s,p)=>s+((p.fees&&p.fees[m])?+p.fees[m]:0),0);
+    gt+=t;
+    const cls=t>=45000?'tc-green':t>=40000?'tc-amber':'tc-red';
+    const isCur=m===cur;
+    return`<td class="col-m${isCur?' col-cur':''}"><div class="tot-cell ${cls}">${t>0?fmtGBP(t):'—'}</div></td>`;
+  }).join('');
+  tbody+=`<tr class="row-total"><td class="col-name" colspan="2" style="font-size:9px;letter-spacing:.1em;text-transform:uppercase">Total (Live)</td><td class="col-st"></td>${totCells}<td class="col-total">${fmtGBP(gt)}</td></tr>`;
+
+  document.getElementById('fc-tbody').innerHTML=tbody;
+}
+
+// ── Invoice mutations — all call saveAll immediately ──────
+function cycleInvState(projId,ym){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  pushUndo('Mark '+p.name.split(' ')[0]+' '+fmtM(ym));
+  const cur=getInvState(p,ym);
+  const next={forecast:'issued',issued:'paid',paid:'forecast',overdue:'issued'}[cur]||'forecast';
+  setInvState(p,ym,next);
+  renderTable();
+  showToast(p.name.split(' ')[0]+' '+fmtM(ym)+': '+next,'ok');
+  saveAll();
+}
+let ctxProjId=null,ctxYm=null;
+function showCtxMenu(e,projId,ym){
+  e.preventDefault(); e.stopPropagation();
+  ctxProjId=projId; ctxYm=ym;
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const v=(p.fees&&p.fees[ym])?+p.fees[ym]:0;
+  const cur=getEffectiveState(p,ym);
+  const menu=document.getElementById('ctx-menu');
+  const states=[
+    {s:'forecast',label:'Forecasted',color:'var(--fc-forecast)',border:'#b8d8ee'},
+    {s:'issued',label:'Invoice Issued',color:'var(--fc-issued)',border:'#e6c200'},
+    {s:'overdue',label:'Overdue',color:'var(--fc-overdue)',border:'#e07060'},
+    {s:'paid',label:'Paid',color:'var(--fc-paid)',border:'#8ccca8'}
+  ];
+  menu.innerHTML=`<div style="padding:6px 13px 4px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d)">${p.name.slice(0,22)} · ${fmtM(ym)}</div>`+
+    states.map(({s,label,color,border})=>`<div class="ctx-item${s===cur?' ctx-active':''}" onclick="ctxSetState('${s}')" style="${s===cur?'font-weight:700;color:var(--blue)':''}"><div class="ctx-dot" style="background:${color};border:1.5px solid ${border}"></div>${label}${s===cur?' ◀':''}</div>`).join('')+
+    `<div class="ctx-item ctx-sep" onclick="ctxShiftLeft()">← Shift earlier</div>
+     <div class="ctx-item" onclick="ctxShiftRight()">→ Shift later</div>
+     <div class="ctx-item" onclick="ctxEditValue()" style="border-top:1px solid var(--bdr);margin-top:2px;padding-top:7px">✏ Edit amount (${fmtGBP(v)})</div>
+     <div class="ctx-item" style="color:var(--red)" onclick="ctxRemoveFee()">✕ Remove fee</div>`;
+  const x=Math.min(e.clientX,window.innerWidth-200), y=Math.min(e.clientY,window.innerHeight-280);
+  menu.style.left=x+'px'; menu.style.top=y+'px'; menu.style.display='block';
+  setTimeout(()=>document.addEventListener('click',closeCtx,{once:true}),0);
+}
+function closeCtx(){document.getElementById('ctx-menu').style.display='none';}
+function ctxSetState(s){const p=projects.find(x=>x.id===ctxProjId);if(!p)return;pushUndo('Mark inv '+s);setInvState(p,ctxYm,s);renderTable();closeCtx();showToast('Marked as '+s,'ok');saveAll();}
+function ctxShiftLeft(){const p=projects.find(x=>x.id===ctxProjId);if(!p)return;const v=p.fees[ctxYm];const prev=nextYM(ctxYm,-1);if(!v){closeCtx();return;}p.fees[prev]=(+p.fees[prev]||0)+(+v);delete p.fees[ctxYm];if(p.invState&&p.invState[ctxYm]){p.invState[prev]=p.invState[ctxYm];delete p.invState[ctxYm];}renderTable();closeCtx();showToast('Shifted to '+fmtM(prev),'ok');saveAll();}
+function ctxShiftRight(){const p=projects.find(x=>x.id===ctxProjId);if(!p)return;const v=p.fees[ctxYm];const next=nextYM(ctxYm,1);if(!v){closeCtx();return;}p.fees[next]=(+p.fees[next]||0)+(+v);delete p.fees[ctxYm];if(p.invState&&p.invState[ctxYm]){p.invState[next]=p.invState[ctxYm];delete p.invState[ctxYm];}renderTable();closeCtx();showToast('Shifted to '+fmtM(next),'ok');saveAll();}
+function ctxEditValue(){const p=projects.find(x=>x.id===ctxProjId);if(!p)return;const v=(p.fees&&p.fees[ctxYm])||0;const nv=prompt(p.name+' — '+fmtM(ctxYm)+'\nNew amount (£):',v);if(nv===null)return;const num=parseFloat(nv)||0;pushUndo('Edit fee');if(!p.fees)p.fees={};if(num>0)p.fees[ctxYm]=num;else delete p.fees[ctxYm];renderTable();closeCtx();saveAll();}
+function ctxRemoveFee(){const p=projects.find(x=>x.id===ctxProjId);if(!p)return;if(!confirm('Remove fee for '+p.name+' in '+fmtM(ctxYm)+'?'))return;pushUndo('Remove fee');delete p.fees[ctxYm];if(p.invState)delete p.invState[ctxYm];renderTable();closeCtx();saveAll();}
+
+// ── Drag ──────────────────────────────────────────────────
+function onCellDragStart(e,projId,ym,value){dragState={projId,ym,value};e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','');e.target.classList.add('dragging');}
+function onCellDragEnd(e){if(e&&e.target)e.target.classList.remove('dragging');setTimeout(()=>{dragState=null;},0);}
+function onCellDragOver(e,targetYm){if(!dragState||dragState.ym===targetYm)return;e.preventDefault();e.dataTransfer.dropEffect='move';}
+function onCellDrop(e,targetProjId,targetYm){
+  e.preventDefault(); e.stopPropagation();
+  if(!dragState)return;
+  const{projId,ym:fromYm,value}=dragState;
+  if(projId!==targetProjId){showToast('Can only move within same project','err');return;}
+  if(fromYm===targetYm)return;
+  const p=projects.find(x=>x.id===projId); if(!p||!p.fees)return;
+  pushUndo('Drag '+fmtGBP(value)+' → '+fmtM(targetYm));
+  p.fees[targetYm]=(+p.fees[targetYm]||0)+(+value);
+  delete p.fees[fromYm];
+  if(p.invState&&p.invState[fromYm]){p.invState[targetYm]=p.invState[fromYm];delete p.invState[fromYm];}
+  dragState=null;
+  renderTable();
+  showToast(fmtGBP(value)+' moved to '+fmtM(targetYm),'ok');
+  saveAll();
+}
+function promptNewFee(projId,ym){
+  const p=projects.find(x=>x.id===projId); if(!p)return;
+  const v=prompt('Add fee for '+p.name+' — '+fmtM(ym)+'\nAmount (£):','');
+  if(!v)return;
+  const num=parseFloat(v)||0;
+  if(num>0){if(!p.fees)p.fees={};p.fees[ym]=num;renderTable();renderDashboard();showToast(fmtGBP(num)+' added to '+fmtM(ym),'ok');saveAll();}
+}
+function setStatus(id,status){
+  const p=projects.find(x=>x.id===id); if(!p)return;
+  pushUndo('Status → '+status);
+  p.status=status;
+  renderTable(); renderDashboard();
+  saveAll();
+}
+function toggleCompleted(){showCompleted=!showCompleted;renderTable();}
+
+// ── Multi-select ──────────────────────────────────────────
+let selectedCells={};
+function selectCell(projId,ym,on=true){if(!selectedCells[projId])selectedCells[projId]=[];const idx=selectedCells[projId].indexOf(ym);if(on&&idx<0)selectedCells[projId].push(ym);if(!on&&idx>=0)selectedCells[projId].splice(idx,1);}
+function toggleProjectSelection(projId,checked){const p=projects.find(x=>x.id===projId);if(!p)return;Object.keys(p.fees||{}).forEach(m=>selectCell(projId,m,checked));renderTable();}
+function handleCellClick(e,projId,ym){e.stopPropagation();if(e.shiftKey||e.ctrlKey||e.metaKey){selectCell(projId,ym,!(selectedCells[projId]||[]).includes(ym));renderTable();return;}selectedCells={};cycleInvState(projId,ym);}
+function updateMultiSelectUI(){const has=Object.values(selectedCells).some(v=>v.length>0);const mm=document.getElementById('multi-move-btn'),sp=document.getElementById('spread-btn');if(mm)mm.style.display=has?'':'none';if(sp)sp.style.display=has?'':'none';}
+function selectedProjectAndMonths(){const projId=Object.keys(selectedCells).find(k=>(selectedCells[k]||[]).length>0);return{projId,months:projId?[...selectedCells[projId]].sort():[]};}
+function openMultiMove(){const{projId,months}=selectedProjectAndMonths();if(!projId||!months.length){showToast('Ctrl-click cells first','err');return;}const p=projects.find(x=>x.id===projId);if(!p)return;const t=prompt('Move '+months.length+' invoice(s) to month (YYYY-MM):',months[0]);if(!t||!/^\d{4}-\d{2}$/.test(t)){showToast('Invalid format','err');return;}pushUndo('Multi-move');let total=0,state='forecast';months.forEach(m=>{total+=(+p.fees[m]||0);state=(p.invState&&p.invState[m])||state;delete p.fees[m];if(p.invState)delete p.invState[m];});p.fees[t]=(+p.fees[t]||0)+total;if(!p.invState)p.invState={};p.invState[t]=state;selectedCells={};renderTable();showToast(fmtGBP(total)+' moved to '+fmtM(t),'ok');saveAll();}
+function openSpread(){const{projId,months}=selectedProjectAndMonths();if(!projId||months.length<2){showToast('Select 2+ cells','err');return;}const p=projects.find(x=>x.id===projId);if(!p)return;const total=months.reduce((s,m)=>s+(+p.fees[m]||0),0);const per=Math.floor(total/months.length);const rem=total-(per*months.length);pushUndo('Spread');months.forEach((m,i)=>{p.fees[m]=per+(i===months.length-1?rem:0);});selectedCells={};renderTable();showToast(fmtGBP(total)+' spread over '+months.length+' months','ok');saveAll();}
+
+// ── Add/Edit Project Modal ─────────────────────────────────
+function openAdd(prospective){
+  editId=null; isProspect=prospective;
+  document.getElementById('modal-ttl').textContent=prospective?'Add Prospect':'Add Project';
+  document.getElementById('stage-grp').style.display=prospective?'block':'none';
+  document.getElementById('fee-sec').style.display=prospective?'none':'block';
+  ['f-name','f-client','f-pm','f-agreed','f-toagree','f-pop','f-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('f-mgr').value='';
+  const fb=document.getElementById('f-billing'); if(fb)fb.value='';
+  buildFeeGrid({});
+  document.getElementById('proj-modal').classList.add('open');
+}
+function openEdit(id){
+  const p=projects.find(x=>x.id===id); if(!p)return;
+  editId=id; isProspect=p.prospective;
+  document.getElementById('modal-ttl').textContent='Edit Project';
+  document.getElementById('stage-grp').style.display=p.prospective?'block':'none';
+  document.getElementById('fee-sec').style.display=p.prospective?'none':'block';
+  document.getElementById('f-name').value=p.name||'';
+  document.getElementById('f-mgr').value=p.manager||'';
+  document.getElementById('f-client').value=p.client||'';
+  document.getElementById('f-pm').value=p.pm||'';
+  document.getElementById('f-agreed').value=p.agreed||'';
+  document.getElementById('f-toagree').value=p.toAgree||'';
+  document.getElementById('f-pop').value=p.pop||'';
+  document.getElementById('f-notes').value=p.notes||'';
+  const fb=document.getElementById('f-billing'); if(fb)fb.value=p.hourlyRate?'hr':'';
+  if(p.prospective)document.getElementById('f-stage').value=p.stage||'';
+  buildFeeGrid(p.fees||{});
+  document.getElementById('proj-modal').classList.add('open');
+}
+function buildFeeGrid(existingFees){
+  // Show all months from earliest existing fee through 18 months ahead
+  const cur=curYM();
+  const existing=Object.keys(existingFees||{}).sort();
+  const start=existing.length?existing[0]:cur;
+  const end=nextYM(cur,18);
+  const monthSet=new Set();
+  let m=start; while(m<=end){monthSet.add(m);m=nextYM(m);}
+  existing.forEach(m=>monthSet.add(m));
+  const months=[...monthSet].sort();
+  // Group by year
+  const byYear={};
+  months.forEach(m=>{const y=m.split('-')[0];(byYear[y]=byYear[y]||[]).push(m);});
+  let h='';
+  Object.keys(byYear).sort().forEach(yr=>{
+    h+=`<div style="grid-column:1/-1;font-size:9px;font-weight:700;color:var(--blue);letter-spacing:.1em;text-transform:uppercase;padding:4px 0 2px;border-top:1px solid var(--bdr);margin-top:2px">${yr}</div>`;
+    byYear[yr].forEach(ym=>{
+      const v=existingFees&&existingFees[ym]?existingFees[ym]:'';
+      const past=ym<cur;
+      const inv=existingFees&&existingFees[ym]?` [${getInvState({fees:existingFees,invState:{}},ym)}]`:'';
+      h+=`<div class="fee-it">
+        <div class="fee-lb" style="${past?'color:var(--grey-m)':''}">${MO[+ym.split('-')[1]-1]}${past?' ✓':''}</div>
+        <input class="fee-in" type="number" data-ym="${ym}" value="${v}" placeholder="—" style="${past?'opacity:.65':''}">
+      </div>`;
+    });
+  });
+  const g=document.getElementById('fee-grid'); if(g)g.innerHTML=h;
+}
+function saveProject(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){showToast('Name required','err');return;}
+  // Read grid — only months shown
+  const gridFees={};
+  document.querySelectorAll('#fee-grid .fee-in').forEach(inp=>{
+    const v=parseFloat(inp.value);
+    if(inp.dataset.ym){
+      if(v&&v>0) gridFees[inp.dataset.ym]=v;
+      else gridFees[inp.dataset.ym]=null; // null = delete
+    }
+  });
+  const fb=document.getElementById('f-billing');
+  const patch={
+    name,
+    manager:document.getElementById('f-mgr').value,
+    client:document.getElementById('f-client').value,
+    pm:document.getElementById('f-pm').value,
+    agreed:parseFloat(document.getElementById('f-agreed').value)||0,
+    toAgree:parseFloat(document.getElementById('f-toagree').value)||0,
+    pop:document.getElementById('f-pop').value,
+    notes:document.getElementById('f-notes').value,
+    prospective:isProspect,
+    stage:isProspect?document.getElementById('f-stage').value:undefined,
+    hourlyRate:!!(fb&&fb.value==='hr')
+  };
+  if(editId){
+    const i=projects.findIndex(p=>p.id===editId);
+    if(i>-1){
+      const ex=projects[i];
+      // Merge: keep ALL existing fees (all years), apply grid changes on top
+      const merged={...(ex.fees||{})};
+      Object.entries(gridFees).forEach(([ym,v])=>{
+        if(v===null) delete merged[ym];
+        else merged[ym]=v;
+      });
+      // NEVER overwrite invState
+      projects[i]={...ex,...patch,fees:merged,invState:ex.invState||{}};
+    }
+    showToast('✓ Updated','ok');
+  } else {
+    const fees={};
+    Object.entries(gridFees).forEach(([ym,v])=>{if(v>0)fees[ym]=v;});
+    patch.id='p'+Date.now(); patch.fees=fees; patch.invState={};
+    projects.push(patch);
+    showToast('✓ Added','ok');
+  }
+  closeModal('proj-modal');
+  renderTable();
+  renderDashboard();
+  saveAll();
+}
+function delProj(id){if(!confirm('Delete?'))return;const _dp=projects.find(p=>p.id===id);pushUndo('Delete — '+(_dp?_dp.name.split(' ')[0]:''));projects=projects.filter(p=>p.id!==id);renderTable();renderDashboard();showToast('Deleted','ok');saveAll();}
+function promote(id){const p=projects.find(x=>x.id===id);if(!p)return;if(!confirm('Promote "'+p.name+'" to active?'))return;pushUndo('Promote');p.prospective=false;p.stage=undefined;renderTable();renderPipeline();showToast('✓ Promoted','ok');saveAll();}
+
+// ═══════════════════════════════════════════════════════════
+// PIPELINE PAGE
+// ═══════════════════════════════════════════════════════════
+function renderPipeline(){
+  const list=projects.filter(p=>p.prospective);
+  const tv=list.reduce((s,p)=>s+(+p.agreed||0)+(+p.toAgree||0),0);
+  // Average age of proposals sent
+  const sent=list.filter(p=>p.pipeProposalDate);
+  const avgAge=sent.length?Math.round(sent.reduce((s,p)=>{
+    const d=new Date(p.pipeProposalDate.split('/').reverse().join('-'));
+    return s+Math.round((Date.now()-d)/86400000);
+  },0)/sent.length):null;
+
+  document.getElementById('pipe-stats').innerHTML=`
+    <div class="sc ca"><div class="slbl">Prospects</div><div class="sval">${list.length}</div><div class="ssub">not yet instructed</div></div>
+    <div class="sc cb"><div class="slbl">Pipeline Value</div><div class="sval">${fmtGBP(tv)}</div><div class="ssub">estimated</div></div>
+    ${avgAge!==null?`<div class="sc" style="border-top:3px solid var(--amber)"><div class="slbl">Avg Proposal Age</div><div class="sval" style="color:var(--amber)">${avgAge}d</div><div class="ssub">${sent.length} with date</div></div>`:''}`;
+
+  document.getElementById('pipe-badge').textContent=list.length;
+  const tb=document.getElementById('pipe-tbody'); if(!tb)return;
+  if(!list.length){tb.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--grey-m);font-size:11px">No prospects yet</td></tr>`;return;}
+
+  const PLBL={high:'High',med:'Med',low:'Low',tracking:'Tracking',none:'—'};
+  tb.innerHTML=list.map(p=>{
+    const pc=p.pipePriority||'none';
+    const dotColor=pc==='high'?'#c0392b':pc==='med'?'#c47a00':pc==='low'?'#1a7a4a':pc==='tracking'?'#006caa':'#a0a8ae';
+
+    // Proposal age display
+    let ageHtml='<span style="color:var(--grey-m);font-size:10px">Not sent</span>';
+    if(p.pipeProposalDate){
+      const d=new Date(p.pipeProposalDate.split('/').reverse().join('-'));
+      const days=Math.round((Date.now()-d)/86400000);
+      const col=days>90?'var(--red)':days>30?'var(--amber)':'var(--green)';
+      ageHtml=`<div style="font-weight:700;font-size:11px;color:${col}">${days}d ago</div><div style="font-size:9px;color:var(--grey-d)">${p.pipeProposalDate}</div>`;
+    }
+
+    return`<tr style="border-left:3px solid ${dotColor}">
+      <td class="col-name" style="font-weight:600;font-size:12px">${esc(p.name)}</td>
+      <td class="col-mgr"><div class="mp"><div class="md" style="background:${mgrC(p.manager)}"></div>${esc(p.manager||'—')}</div></td>
+      <td style="font-size:12px">${esc(p.client||'—')}</td>
+      <td style="text-align:right;font-family:'Courier New',monospace;color:var(--amber)">${fmtGBP((+p.agreed||0)+(+p.toAgree||0))}</td>
+      <td>
+        <select style="font-size:10px;font-weight:700;border:1px solid ${dotColor};border-radius:var(--r);padding:2px 6px;color:${dotColor};background:white;cursor:pointer;outline:none" onchange="setPipePriority('${p.id}',this.value)">
+          ${['none','high','med','low','tracking'].map(v=>`<option value="${v}" ${pc===v?'selected':''}>${PLBL[v]}</option>`).join('')}
+        </select>
+      </td>
+      <td><span class="spill s-pipe">${esc(p.stage||'—')}</span></td>
+      <td style="max-width:120px;font-size:11px;color:var(--grey-d)">${esc((p.notes||'').slice(0,55))}</td>
+      <td style="min-width:130px">
+        ${ageHtml}
+        <input type="date" style="font-size:9px;border:1px dashed var(--bdr);border-radius:2px;padding:2px;margin-top:3px;width:120px;color:var(--grey-d);outline:none" title="Date proposal was sent" value="${p.pipeProposalDate?p.pipeProposalDate.split('/').reverse().join('-'):''}" onchange="setPipeProposalDate('${p.id}',this.value)">
+      </td>
+      <td><div style="display:flex;gap:4px">
+        <button class="bp btn-sm" onclick="promote('${p.id}')">↑ Promote</button>
+        <button class="btn btn-s btn-xs" onclick="openEdit('${p.id}')">Edit</button>
+        <button class="btn btn-d btn-xs" onclick="delProj('${p.id}')">✕</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+function setPipePriority(id,val){const p=projects.find(x=>x.id===id);if(!p)return;p.pipePriority=val;renderPipeline();saveAll();}
+function setPipeProposalDate(id,val){
+  const p=projects.find(x=>x.id===id); if(!p)return;
+  if(val){const[y,m,d]=val.split('-');p.pipeProposalDate=d+'/'+m+'/'+y;}
+  else p.pipeProposalDate=null;
+  renderPipeline(); saveAll();
+}
+
+// ═══════════════════════════════════════════════════════════
+// SCORECARD
+// ═══════════════════════════════════════════════════════════
+function syncManagerDropdowns(){
+  const extras=teamPeople.filter(p=>!['Adam','Ben','Johnny','Andrea'].includes(p));
+  ['f-mgr','fc-mgr'].forEach(id=>{const sel=document.getElementById(id);if(!sel)return;extras.forEach(p=>{if(!sel.querySelector(`option[value="${p}"]`)){const o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o)}})});
+}
+function populateQtrSelect(){
+  const sel=document.getElementById('sc-qtr');if(!sel)return;
+  const qtrs=Object.keys(scorecard).sort();
+  sel.innerHTML=qtrs.map(q=>`<option value="${q}">${q.replace('-',' ')}</option>`).join('');
+  if(qtrs.length)sel.value=qtrs[qtrs.length-1];
+}
+function renderScorecard(){
+  const qtr=document.getElementById('sc-qtr').value;
+  const weeks=qtrWeeks[qtr]||[];
+  if(!scorecard[qtr])return;
+  const qd=scorecard[qtr];
+  const ben=qd.Ben||{workWon:new Array(13).fill(0),target:195000};
+  const bT=ben.workWon.reduce((s,v)=>s+(+v||0),0),bTgt=ben.target||195000,bPct=Math.min((bT/bTgt)*100,100);
+  document.getElementById('ben-won').innerHTML=`<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-size:22px;font-weight:700;color:var(--blue);letter-spacing:-.02em">${fmtGBP(bT)}</div><div style="font-size:10px;color:var(--grey-d);font-weight:600;text-transform:uppercase;letter-spacing:.05em">of ${fmtGBP(bTgt)} target</div></div><div style="flex:1;min-width:180px"><div class="pbg" style="height:6px"><div class="pf" style="width:${bPct}%;background:${barClr(bT)}"></div></div><div style="display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--grey-d);font-weight:500"><span>${bPct.toFixed(0)}% achieved</span><span>${fmtGBP(Math.max(bTgt-bT,0))} remaining</span></div></div></div><div style="font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--grey-d);margin-bottom:5px">Weekly Work Won (£)</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">${weeks.slice(0,13).map((w,i)=>`<div class="wc"><div class="wl">${w}</div><input class="wi" type="number" value="${ben.workWon[i]||0}" oninput="qd.Ben.workWon[${i}]=+this.value||0;markUnsaved()"></div>`).join('')}</div>`;
+  const people=teamPeople.filter(p=>p!=='Ben');
+  document.getElementById('sc-grid').innerHTML=people.map(name=>{
+    const color=teamColors[name]||'#6b7580';
+    const pd=qd[name]||{billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)};
+    if(!pd.billable)pd.billable=new Array(13).fill(0);if(!pd.holiday)pd.holiday=new Array(13).fill(0);if(!pd.sick)pd.sick=new Array(13).fill(0);
+    const totH=pd.billable.reduce((s,v)=>s+(+v||0),0),totD=totH/8,totHol=pd.holiday.reduce((s,v)=>s+(+v||0),0),pct=Math.min((totD/45)*100,100);
+    return`<div class="pc"><div class="ph2" style="background:${color}"><div class="pn">${name}</div><div style="font-size:9px;color:rgba(255,255,255,.65);font-weight:600">${qtr.replace('-',' ')}</div></div><div class="pb2"><div class="pr"><div class="pm"><span>Billable Days</span><span class="val">${totD.toFixed(1)} / 45</span></div><div class="pbg"><div class="pf" style="width:${pct}%;background:${color}"></div></div></div><div style="display:flex;gap:12px;margin-bottom:8px;font-size:10px;color:var(--grey-d);font-weight:500"><span>Total: <strong style="color:var(--black)">${totH.toFixed(1)} hrs</strong></span><span>Holiday: <strong style="color:var(--black)">${totHol} days</strong></span></div><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin-bottom:3px">Billable hrs / week</div><div class="wg">${weeks.slice(0,13).map((w,i)=>`<div class="wc"><div class="wl">${w}</div><input class="wi" type="number" value="${pd.billable[i]||0}" oninput="scorecard['${qtr}']['${name}'].billable[${i}]=+this.value||0;markUnsaved()"></div>`).join('')}</div><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin:5px 0 3px">Holiday / Sick</div><div class="wg">${weeks.slice(0,13).map((w,i)=>`<div class="wc"><div class="wl">${w}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px"><input class="wi" type="number" value="${pd.holiday[i]||0}" title="Holiday" placeholder="H" oninput="scorecard['${qtr}']['${name}'].holiday[${i}]=+this.value||0;markUnsaved()"><input class="wi" type="number" value="${pd.sick[i]||0}" title="Sick" placeholder="S" style="border-color:#fdecea" oninput="scorecard['${qtr}']['${name}'].sick[${i}]=+this.value||0;markUnsaved()"></div></div>`).join('')}</div></div></div>`;
+  }).join('');
+}
+function openNewQtrModal(){document.getElementById('qtr-modal').classList.add('open')}
+function createQuarter(){const qn=document.getElementById('nq-qtr').value,yr=document.getElementById('nq-yr').value;const key=`${qn}-${yr}`,startDate=document.getElementById('nq-start').value,target=parseFloat(document.getElementById('nq-target').value)||195000;if(scorecard[key]){showToast(`${key} already exists`,'err');return}let weeks=[];if(startDate){let d=new Date(startDate);for(let i=0;i<13;i++){weeks.push(d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}).replace(' ','-'));d.setDate(d.getDate()+7)}}else{for(let i=0;i<13;i++)weeks.push(`Wk${i+1}`)}const blank={Ben:{workWon:new Array(13).fill(0),target}};teamPeople.filter(p=>p!=='Ben').forEach(p=>{blank[p]={billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)}});scorecard[key]=blank;qtrWeeks[key]=weeks;markUnsaved();closeModal('qtr-modal');populateQtrSelect();document.getElementById('sc-qtr').value=key;renderScorecard();showToast(`✓ ${key} created`,'ok')}
+function openNewPersonModal(){document.getElementById('np-name').value='';document.getElementById('person-modal').classList.add('open')}
+function addPerson(){const name=document.getElementById('np-name').value.trim();if(!name||teamPeople.includes(name)){showToast(name?'Already exists':'Enter a name','err');return}const color=document.getElementById('np-color').value;teamPeople.push(name);teamColors[name]=color;Object.keys(scorecard).forEach(q=>{if(!scorecard[q][name])scorecard[q][name]={billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)}});syncManagerDropdowns();markUnsaved();closeModal('person-modal');showToast(`✓ ${name} added`,'ok');if(document.querySelector('.pg.active')?.id==='page-scorecard')renderScorecard()}
+
+// ═══════════════════════════════════════════════════════════
+// WORK WON MODAL
+// ═══════════════════════════════════════════════════════════
+function openWonModal(){const qtr=document.getElementById('sc-qtr').value,weeks=qtrWeeks[qtr]||[];document.getElementById('ww-wk').innerHTML=weeks.slice(0,13).map((w,i)=>`<option value="${i}">${w}</option>`).join('');const pipe=projects.filter(p=>p.prospective);document.getElementById('ww-pipe').innerHTML='<option value="">— Pipeline project —</option>'+pipe.map((p,i)=>`<option value="${i}">${p.name} — ${fmtGBP((+p.agreed||0)+(+p.toAgree||0))}</option>`).join('');['ww-name','ww-val'].forEach(id=>document.getElementById(id).value='');document.getElementById('ww-promote').value='';document.getElementById('won-modal').classList.add('open')}
+function fillWon(){const i=parseInt(document.getElementById('ww-pipe').value);if(isNaN(i))return;const p=projects.filter(p=>p.prospective)[i];if(!p)return;document.getElementById('ww-name').value=p.name;document.getElementById('ww-val').value=(+p.agreed||0)+(+p.toAgree||0)}
+function saveWon(){const qtr=document.getElementById('sc-qtr').value,wkIdx=parseInt(document.getElementById('ww-wk').value)||0,val=parseFloat(document.getElementById('ww-val').value)||0,name=document.getElementById('ww-name').value.trim(),promote=document.getElementById('ww-promote').value==='yes';if(!val){showToast('Enter a value','err');return}if(!scorecard[qtr])return;scorecard[qtr].Ben.workWon[wkIdx]=(scorecard[qtr].Ben.workWon[wkIdx]||0)+val;if(promote&&name){const pi=projects.findIndex(p=>p.prospective&&p.name===name);if(pi>-1){projects[pi].prospective=false;projects[pi].stage=undefined;showToast(`✓ ${name} promoted`,'ok')}}markUnsaved();closeModal('won-modal');renderScorecard();showToast(`✓ £${val.toLocaleString()} added`,'ok')}
+
+// ═══════════════════════════════════════════════════════════
+// ADD / EDIT PROJECT (FORECAST)
+// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// MODAL / TOAST UTILS
+// ═══════════════════════════════════════════════════════════
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.mo').forEach(o=>o.addEventListener('click',e=>{if(e.target===e.currentTarget)o.classList.remove('open')}));
+function showToast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),2500)}
+window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.returnValue=''}});
+
+// ═══════════════════════════════════════════════════════════
+// FIREBASE REAL-TIME SYNC
+// ═══════════════════════════════════════════════════════════
+let db = null;
+let fbUnsubscribe = null;
+let _fbReady = false;
+let _suppressNextLoad=false;
+let _suppressUntil=0;
+
+function initFirebase() {
+  try {
+    const { initializeApp } = window.firebase_app;
+    const { getFirestore, doc, setDoc, onSnapshot, serverTimestamp } = window.firebase_fs;
+    const fbApp = initializeApp({
+      apiKey: "AIzaSyBuYoZwbvC3oS3qND62Hho2ezr7AOR25zI",
+      authDomain: "clwhub.firebaseapp.com",
+      projectId: "clwhub",
+      storageBucket: "clwhub.firebasestorage.app",
+      messagingSenderId: "1069345270249",
+      appId: "1:1069345270249:web:a344075f3c1fafb1fa0378"
+    });
+    db = getFirestore(fbApp);
+    _fbReady = true;
+    updateSyncUI('connected');
+  } catch(e) {
+    console.error('Firebase init failed', e);
+    updateSyncUI('error');
+  }
+}
+
+function updateSyncUI(state) {
+  const btn = document.getElementById('drive-btn');
+  const status = document.getElementById('drive-status');
+  if (!btn) return;
+  const states = {
+    connected: { label: '⚡ Live Sync On', bg: 'var(--green)', color: 'white', sub: 'All changes sync instantly' },
+    saving:    { label: '↑ Saving…',       bg: 'var(--amber)', color: 'white', sub: 'Syncing to cloud…' },
+    error:     { label: '✕ Sync Error',    bg: 'var(--red)',   color: 'white', sub: 'Check connection' },
+    offline:   { label: '◌ Offline',       bg: '#888',         color: 'white', sub: 'No connection' },
+  };
+  const s = states[state] || states.connected;
+  btn.textContent = s.label;
+  btn.style.background = s.bg;
+  btn.style.color = s.color;
+  btn.style.cursor = 'default';
+  if (status) status.textContent = s.sub;
+}
+
+// Load data from a Firestore snapshot into app state
+function applyFirestoreData(d) {
+  if (d.projects)    projects    = d.projects;
+  if (d.scorecard)   scorecard   = d.scorecard;
+  if (d.qtrWeeks)    qtrWeeks    = d.qtrWeeks;
+  if (d.teamColors)  teamColors  = { ...DEFAULT_TC, ...d.teamColors };
+  if (d.teamPeople)  teamPeople  = d.teamPeople;
+  if (d.l10Data)     { const all = l10LoadAll(); l10SaveAll({ ...all, ...d.l10Data }); }
+  if (d.wheelData)   Object.assign(WHEEL_DATA, d.wheelData);
+  loadedFileName = 'Firebase';
+  // Re-render whichever page is active
+  const ap = document.querySelector('.pg.active');
+  if (ap) {
+    const id = ap.id.replace('page-', '');
+    ({ dashboard: renderDashboard, l10: openL10Tab, projects: renderTable,
+       pipeline: renderPipeline, scorecard: renderScorecard, wheels: renderWheels })[id]?.();
+  }
+  syncManagerDropdowns();
+  populateQtrSelect();
+  markSaved();
+}
+
+// Subscribe to real-time updates
+function subscribeToFirestore() {
+  if (!_fbReady) return;
+  const { getFirestore, doc, onSnapshot } = window.firebase_fs;
+  const docRef = doc(db, 'clwhub', 'main');
+  if (fbUnsubscribe) fbUnsubscribe();
+  fbUnsubscribe = onSnapshot(docRef, (snap) => {
+    if (!snap.exists()) { showToast('No cloud data yet — Save to create it', 'ok'); return; }
+    if(_suppressNextLoad||Date.now()<_suppressUntil){_suppressNextLoad=false;return;}
+    applyFirestoreData(snap.data());
+    showToast('✓ Synced','ok');
+  }, (err) => {
+    console.error('Firestore listen error', err);
+    updateSyncUI('error');
+  });
+}
+
+// Save everything to Firestore
+async function saveAll(){
+  if(!_fbReady){markUnsaved();return;}
+  updateSyncUI('saving');
+  _suppressNextLoad=true;
+  _suppressUntil=Date.now()+6000;
+  try{
+    const{getFirestore,doc,setDoc}=window.firebase_fs;
+    const docRef=doc(db,'clwhub','main');
+    const now=new Date();
+    await setDoc(docRef,{projects,scorecard,qtrWeeks,teamColors,teamPeople,
+      l10Data:l10LoadAll(),wheelData:WHEEL_DATA,
+      savedAt:now.toLocaleDateString('en-GB')+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+      version:'8.5'});
+    markSaved();updateSyncUI('connected');
+  }catch(e){
+    console.error('Firestore save error',e);
+    _suppressNextLoad=false;_suppressUntil=0;
+    updateSyncUI('error');showToast('Save failed','err');
+  }
+}
+
+// Auto-save 30s after any change
+let _autoSaveTimer = null;
+function scheduleAutoSave() {
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(() => { if (unsaved && _fbReady) saveAll(); }, 30000);
+}
+
+// Patch markUnsaved to also schedule auto-save
+const _origMarkUnsaved = markUnsaved;
+function markUnsaved() { _origMarkUnsaved(); scheduleAutoSave(); }
+
+// ═══════════════════════════════════════════════════════════
+// PASSWORD GATE
+// ═══════════════════════════════════════════════════════════
+function checkPassword() {
+  const val = document.getElementById('pw-input').value;
+  if (val === 'CLW_HUB_2026') {
+    sessionStorage.setItem('clw_auth', '1');
+    document.getElementById('ls').classList.add('hidden');
+    document.getElementById('app').style.display = 'flex';
+    // Start with embedded data immediately
+    projects    = JSON.parse(JSON.stringify(SEED_P));
+    scorecard   = JSON.parse(JSON.stringify(SEED_SC));
+    qtrWeeks    = JSON.parse(JSON.stringify(SEED_QW));
+    teamColors  = { ...DEFAULT_TC };
+    teamPeople  = ['Adam','Ben','Johnny','Andrea'];
+    loadedFileName = 'Firebase';
+    syncManagerDropdowns(); populateQtrSelect(); renderDashboard();
+    // Then connect Firebase and load live data
+    connectFirebase();
+  } else {
+    document.getElementById('pw-err').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+function connectFirebase() {
+  if (window.firebaseSDKReady) {
+    initFirebase();
+    subscribeToFirestore();
+  } else {
+    // SDK still loading — set a callback
+    window._pendingFirebaseConnect = () => {
+      initFirebase();
+      subscribeToFirestore();
+    };
+  }
+}
+
+// On page load — skip password if already authenticated this session
+window.addEventListener('load', () => {
+  if (sessionStorage.getItem('clw_auth') === '1') {
+    document.getElementById('ls').classList.add('hidden');
+    document.getElementById('app').style.display = 'flex';
+    projects   = JSON.parse(JSON.stringify(SEED_P));
+    scorecard  = JSON.parse(JSON.stringify(SEED_SC));
+    qtrWeeks   = JSON.parse(JSON.stringify(SEED_QW));
+    teamColors = { ...DEFAULT_TC };
+    teamPeople = ['Adam','Ben','Johnny','Andrea'];
+    loadedFileName = 'Firebase';
+    syncManagerDropdowns(); populateQtrSelect(); renderDashboard();
+    connectFirebase();
+  } else {
+    setTimeout(() => document.getElementById('pw-input')?.focus(), 100);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// SUCCESS WHEELS
+// ═══════════════════════════════════════════════════════════
+const WHEEL_DATA = {
+  blank_biz: {
+    label: 'Business — Template',
+    segments: [
+      {name:'Marketing / Prospecting', current:5, ideal:7, priority:1},
+      {name:'Sales', current:7, ideal:7, priority:0},
+      {name:'Nurture', current:9, ideal:9, priority:0},
+      {name:'Client Delivery', current:10, ideal:10, priority:0},
+      {name:'Managing Teams', current:3, ideal:5, priority:1},
+      {name:'Finance & Admin', current:3, ideal:5, priority:0},
+    ]
+  },
+  annual_biz: {
+    label: 'Business — Annual',
+    segments: [
+      {name:'Marketing / Prospecting', current:2, ideal:7, priority:1},
+      {name:'Sales', current:4, ideal:7, priority:2},
+      {name:'Nurture', current:2, ideal:7, priority:3},
+      {name:'Client Delivery', current:9, ideal:7, priority:0},
+      {name:'Managing Teams', current:4, ideal:7, priority:0},
+      {name:'Finance & Admin', current:6, ideal:7, priority:0},
+    ]
+  },
+  q1_biz: {
+    label: 'Business — Q1',
+    segments: [
+      {name:'Marketing / Prospecting', current:2, ideal:6, priority:1},
+      {name:'Sales', current:2, ideal:5, priority:2},
+      {name:'Nurture', current:4, ideal:7, priority:3},
+      {name:'Client Delivery', current:7, ideal:8, priority:4},
+      {name:'Managing Teams', current:0, ideal:0, priority:0},
+      {name:'Finance & Admin', current:10, ideal:10, priority:0},
+    ]
+  },
+  q2_biz:{label:'Business — Q2',segments:[{name:'Marketing / Prospecting',current:0,ideal:0,priority:0},{name:'Sales',current:0,ideal:0,priority:0},{name:'Nurture',current:0,ideal:0,priority:0},{name:'Client Delivery',current:0,ideal:0,priority:0},{name:'Managing Teams',current:0,ideal:0,priority:0},{name:'Finance & Admin',current:0,ideal:0,priority:0}]},
+  q3_biz:{label:'Business — Q3',segments:[{name:'Marketing / Prospecting',current:0,ideal:0,priority:0},{name:'Sales',current:0,ideal:0,priority:0},{name:'Nurture',current:0,ideal:0,priority:0},{name:'Client Delivery',current:0,ideal:0,priority:0},{name:'Managing Teams',current:0,ideal:0,priority:0},{name:'Finance & Admin',current:0,ideal:0,priority:0}]},
+  q4_biz:{label:'Business — Q4',segments:[{name:'Marketing / Prospecting',current:0,ideal:0,priority:0},{name:'Sales',current:0,ideal:0,priority:0},{name:'Nurture',current:0,ideal:0,priority:0},{name:'Client Delivery',current:0,ideal:0,priority:0},{name:'Managing Teams',current:0,ideal:0,priority:0},{name:'Finance & Admin',current:0,ideal:0,priority:0}]},
+  personal_template: {
+    label: 'Personal — Template',
+    segments: [
+      {name:'Health', current:2, ideal:8, priority:0},
+      {name:'Wealth', current:5, ideal:8, priority:0},
+      {name:'Business / Career', current:9, ideal:8, priority:0},
+      {name:'Family', current:5, ideal:5, priority:0},
+      {name:'Friends', current:7, ideal:5, priority:0},
+      {name:'Learning', current:3, ideal:5, priority:0},
+      {name:'Spiritual', current:1, ideal:5, priority:0},
+      {name:'Contribution', current:10, ideal:6, priority:0},
+    ]
+  },
+  personal_annual: {
+    label: 'Personal — Annual',
+    segments: [
+      {name:'Health', current:5, ideal:6, priority:0},
+      {name:'Wealth', current:3, ideal:6, priority:0},
+      {name:'Business / Career', current:9, ideal:8, priority:0},
+      {name:'Family', current:9, ideal:9, priority:0},
+      {name:'Friends', current:9, ideal:8, priority:0},
+      {name:'Learning', current:9, ideal:9, priority:0},
+      {name:'Spiritual', current:9, ideal:8, priority:0},
+      {name:'Contribution', current:7, ideal:8, priority:0},
+    ]
+  },
+  q1_personal: {
+    label: 'Personal — Q1',
+    segments: [
+      {name:'Health', current:6, ideal:8, priority:0},
+      {name:'Wealth', current:8, ideal:8, priority:0},
+      {name:'Business / Career', current:8, ideal:9, priority:0},
+      {name:'Family', current:7, ideal:7, priority:0},
+      {name:'Friends', current:5, ideal:7, priority:0},
+      {name:'Learning', current:7, ideal:8, priority:0},
+      {name:'Spiritual', current:2, ideal:2, priority:0},
+      {name:'Contribution', current:8, ideal:8, priority:0},
+    ]
+  },
+  q2_personal:{label:'Personal — Q2',segments:[{name:'Health',current:0,ideal:0,priority:0},{name:'Wealth',current:0,ideal:0,priority:0},{name:'Business / Career',current:0,ideal:0,priority:0},{name:'Family',current:0,ideal:0,priority:0},{name:'Friends',current:0,ideal:0,priority:0},{name:'Learning',current:0,ideal:0,priority:0},{name:'Spiritual',current:0,ideal:0,priority:0},{name:'Contribution',current:0,ideal:0,priority:0}]},
+  q3_personal:{label:'Personal — Q3',segments:[{name:'Health',current:0,ideal:0,priority:0},{name:'Wealth',current:0,ideal:0,priority:0},{name:'Business / Career',current:0,ideal:0,priority:0},{name:'Family',current:0,ideal:0,priority:0},{name:'Friends',current:0,ideal:0,priority:0},{name:'Learning',current:0,ideal:0,priority:0},{name:'Spiritual',current:0,ideal:0,priority:0},{name:'Contribution',current:0,ideal:0,priority:0}]},
+  q4_personal:{label:'Personal — Q4',segments:[{name:'Health',current:0,ideal:0,priority:0},{name:'Wealth',current:0,ideal:0,priority:0},{name:'Business / Career',current:0,ideal:0,priority:0},{name:'Family',current:0,ideal:0,priority:0},{name:'Friends',current:0,ideal:0,priority:0},{name:'Learning',current:0,ideal:0,priority:0},{name:'Spiritual',current:0,ideal:0,priority:0},{name:'Contribution',current:0,ideal:0,priority:0}]},
+};
+
+// Segment colours
+const WHEEL_COLORS = [
+  '#006caa','#1a7a4a','#c47a00','#c0392b',
+  '#6b4c8a','#1a7a7a','#b5451b','#4a6a8a'
+];
+
+function drawWheel(segments) {
+  const canvas = document.getElementById('wheel-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const maxR = Math.min(cx, cy) - 10;
+  const n = segments.length;
+  const sliceAngle = (2 * Math.PI) / n;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw rings (background grid)
+  for (let r = 1; r <= 10; r++) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, (r/10)*maxR, 0, 2*Math.PI);
+    ctx.strokeStyle = r === 10 ? '#dadada' : '#eeeeee';
+    ctx.lineWidth = r === 10 ? 1.5 : 1;
+    ctx.stroke();
+  }
+
+  // Draw spoke lines
+  for (let i = 0; i < n; i++) {
+    const angle = -Math.PI/2 + i * sliceAngle;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(angle)*maxR, cy + Math.sin(angle)*maxR);
+    ctx.strokeStyle = '#e4e8eb';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Draw IDEAL area (filled polygon, light)
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const angle = -Math.PI/2 + i * sliceAngle + sliceAngle/2;
+    const r = (Math.min(segments[i].ideal, 10)/10) * maxR;
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0,108,170,0.08)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,108,170,0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4,3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw CURRENT filled segments
+  for (let i = 0; i < n; i++) {
+    const startAngle = -Math.PI/2 + i * sliceAngle;
+    const endAngle = startAngle + sliceAngle;
+    const midAngle = startAngle + sliceAngle/2;
+    const r = (Math.min(segments[i].current, 10)/10) * maxR;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startAngle, endAngle);
+    ctx.closePath();
+    const color = WHEEL_COLORS[i % WHEEL_COLORS.length];
+    ctx.fillStyle = color + '55';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Segment label
+    const labelR = maxR + 18;
+    const lx = cx + Math.cos(midAngle) * labelR;
+    const ly = cy + Math.sin(midAngle) * labelR;
+    ctx.font = 'bold 9px Barlow,sans-serif';
+    ctx.fillStyle = '#282828';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Short name
+    const short = segments[i].name.split('/')[0].split(' ')[0];
+    ctx.fillText(short, lx, ly);
+
+    // Score dot
+    const dotR = r;
+    const dx = cx + Math.cos(midAngle) * dotR;
+    const dy = cy + Math.sin(midAngle) * dotR;
+    ctx.beginPath();
+    ctx.arc(dx, dy, 4, 0, 2*Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    // Priority badge
+    if (segments[i].priority > 0) {
+      const pr = maxR * 0.5;
+      const px = cx + Math.cos(midAngle) * pr;
+      const py = cy + Math.sin(midAngle) * pr;
+      ctx.beginPath();
+      ctx.arc(px, py, 8, 0, 2*Math.PI);
+      ctx.fillStyle = '#c0392b';
+      ctx.fill();
+      ctx.font = 'bold 8px Barlow,sans-serif';
+      ctx.fillStyle = 'white';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(segments[i].priority, px, py);
+    }
+  }
+
+  // Centre label
+  ctx.font = 'bold 11px Barlow,sans-serif';
+  ctx.fillStyle = '#6b7580';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('1  2  3  4  5  6  7  8  9  10', cx, cy);
+}
+
+function renderWheelInputs(key) {
+  const data = WHEEL_DATA[key];
+  const segs = data.segments;
+  const container = document.getElementById('wheel-inputs');
+  if (!container) return;
+
+  container.innerHTML = segs.map((s, i) => {
+    const color = WHEEL_COLORS[i % WHEEL_COLORS.length];
+    return `
+    <div style="margin-bottom:12px;padding:10px 12px;background:var(--off);border-radius:var(--r);border-left:3px solid ${color}">
+      <div style="font-size:11px;font-weight:700;color:var(--black);margin-bottom:7px;display:flex;align-items:center;gap:6px">
+        <span>${s.name}</span>
+        ${s.priority>0?`<span style="background:#c0392b;color:white;font-size:8px;font-weight:700;padding:1px 5px;border-radius:10px">P${s.priority}</span>`:''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div>
+          <div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin-bottom:3px">Current</div>
+          <input type="number" min="0" max="10" value="${s.current}"
+            style="width:100%;padding:5px 8px;border:1px solid var(--bdr);border-radius:var(--r);font-family:var(--f);font-size:13px;font-weight:700;color:${color};background:white;outline:none"
+            oninput="WHEEL_DATA['${key}'].segments[${i}].current=Math.min(10,Math.max(0,+this.value||0));drawWheel(WHEEL_DATA['${key}'].segments);markUnsaved()">
+        </div>
+        <div>
+          <div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin-bottom:3px">Ideal</div>
+          <input type="number" min="0" max="10" value="${s.ideal}"
+            style="width:100%;padding:5px 8px;border:1px solid var(--bdr);border-radius:var(--r);font-family:var(--f);font-size:13px;font-weight:700;color:var(--blue);background:white;outline:none"
+            oninput="WHEEL_DATA['${key}'].segments[${i}].ideal=Math.min(10,Math.max(0,+this.value||0));drawWheel(WHEEL_DATA['${key}'].segments);markUnsaved()">
+        </div>
+        <div>
+          <div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin-bottom:3px">Priority</div>
+          <input type="number" min="0" max="10" value="${s.priority}"
+            style="width:100%;padding:5px 8px;border:1px solid var(--bdr);border-radius:var(--r);font-family:var(--f);font-size:13px;font-weight:700;color:var(--red);background:white;outline:none"
+            oninput="WHEEL_DATA['${key}'].segments[${i}].priority=Math.min(10,Math.max(0,+this.value||0));drawWheel(WHEEL_DATA['${key}'].segments);markUnsaved()">
+        </div>
+      </div>
+      <div style="margin-top:6px">
+        <div style="height:5px;background:var(--bdr);border-radius:10px;overflow:hidden;position:relative">
+          <div style="position:absolute;top:0;left:0;height:100%;width:${(s.ideal/10)*100}%;background:rgba(0,108,170,0.2);border-radius:10px"></div>
+          <div style="position:absolute;top:0;left:0;height:100%;width:${(s.current/10)*100}%;background:${color};border-radius:10px;transition:width .3s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:2px;font-size:9px;color:var(--grey-d)">
+          <span>${s.current}/10 current</span>
+          <span style="color:var(--blue)">${s.ideal}/10 ideal</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderWheelLegend(key) {
+  const segs = WHEEL_DATA[key].segments;
+  const el = document.getElementById('wheel-legend');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--grey-d)"><div style="width:20px;height:3px;background:rgba(0,108,170,0.3);border-top:1.5px dashed rgba(0,108,170,0.4)"></div>Ideal</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--grey-d)"><div style="width:12px;height:12px;border-radius:2px;background:rgba(0,108,170,0.15)"></div>Current</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--grey-d)"><div style="width:12px;height:12px;border-radius:50%;background:#c0392b;display:flex;align-items:center;justify-content:center;color:white;font-size:7px;font-weight:700">P</div>Priority</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px">
+      ${segs.map((s,i)=>`
+        <div style="display:flex;align-items:center;gap:5px;font-size:10px">
+          <div style="width:8px;height:8px;border-radius:50%;background:${WHEEL_COLORS[i%WHEEL_COLORS.length]};flex-shrink:0"></div>
+          <span style="color:var(--grey-d)">${s.name}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderWheels() {
+  const key = document.getElementById('wheel-period')?.value || 'blank_biz';
+  const data = WHEEL_DATA[key];
+  const titleEl = document.getElementById('wheel-title-left');
+  if (titleEl) titleEl.textContent = data.label;
+  drawWheel(data.segments);
+  renderWheelLegend(key);
+  renderWheelInputs(key);
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+// Remove drop zone listener — Drive only
+function initDrop(){} // no-op, kept for safety
+</script>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
+  import { getFirestore, doc, setDoc, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
+  // Expose to global scope for use in non-module scripts
+  window.firebase_app = { initializeApp };
+  window.firebase_fs  = { getFirestore, doc, setDoc, onSnapshot, serverTimestamp };
+  window.firebaseSDKReady = true;
+  // Trigger connect if password already done
+  if (sessionStorage.getItem('clw_auth') === '1' && window._pendingFirebaseConnect) {
+    window._pendingFirebaseConnect();
+  }
+</script>
+
+</body>
+</html>
