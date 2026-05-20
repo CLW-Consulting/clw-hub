@@ -1002,7 +1002,9 @@ function rL10Metrics(){
 // Get this month's billing for a project name
 function getProjectBilling(name){
   const ym=curYM();
-  const p=projects.filter(x=>!x.prospective).find(x=>x.name.toLowerCase().includes(name.toLowerCase().split(' ')[0].toLowerCase()));
+  const key=name.toLowerCase().replace(/[^a-z0-9]/g,' ').trim().split(' ').filter(w=>w.length>2)[0]||name.toLowerCase().slice(0,5);
+  const p=projects.filter(x=>!x.prospective&&(x.status||'live')!=='complete')
+    .find(x=>x.name.toLowerCase().includes(key));
   return p&&p.fees&&p.fees[ym]?+p.fees[ym]:null;
 }
 
@@ -1144,20 +1146,90 @@ function saveL10Project(){
   l10QueueSave();
 }
 // L10 Report
-function openL10Report(){document.getElementById('report-content').textContent=buildL10Report();document.getElementById('report-modal').classList.add('open');}
+function openL10Report(){
+  const html=buildL10Report();
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+}
 function buildL10Report(){
-  const wk=fmtWk(curMon),L='─'.repeat(60);
-  let o=['CLW — CSSW LONDON WATERPROOFING','L10 WEEKLY LEADERSHIP REPORT','Week of: '+wk,L,''];
-  o.push('LIVE JOBS','─'.repeat(40));
-  (L10D.liveJobs||[]).forEach(j=>{
-    o.push('');
-    o.push('▸ '+j.name.toUpperCase()+'  |  Feedback: '+(FBL[j.fb]||'').toUpperCase()+'  |  Owner: '+(j.own||''));
-    (j.ac||[]).forEach(a=>o.push('  '+(a.d?'[✓]':'[ ]')+' '+a.t+(a.owner?' ('+a.owner+')':'')));
+  const ym=curYM();
+  const fbColors={nr:'#888',pd:'#c47a00',rc:'#1a7a4a',hd:'#c0392b'};
+  const fbLabels={nr:'Not Requested',pd:'Pending',rc:'Received',hd:'Hold'};
+  let rows='';
+  (L10D.liveJobs||[]).forEach((j,i)=>{
+    const billing=getProjectBilling(j.name);
+    const fbColor=fbColors[j.fb]||'#888';
+    const acDone=(j.ac||[]).filter(a=>a.d).length;
+    const acTotal=(j.ac||[]).length;
+    const actions=(j.ac||[]).filter(a=>a.t).map(a=>`
+      <tr>
+        <td style="padding:4px 8px;font-size:11px;color:${a.d?'#999':'#222'};text-decoration:${a.d?'line-through':'none'}">
+          ${a.d?'✓':'○'} ${a.t}${a.owner?' <span style="color:#006caa;font-size:10px">('+a.owner+')</span>':''}
+        </td>
+      </tr>`).join('');
+    rows+=`
+    <tr style="background:${i%2===0?'#f8f9fa':'white'}">
+      <td style="padding:10px 12px;border-left:4px solid ${fbColor};vertical-align:top;min-width:160px">
+        <div style="font-weight:700;font-size:13px;color:#1a1a2e">${j.name}</div>
+        ${billing?`<div style="font-size:10px;font-weight:700;color:#006caa;margin-top:3px;font-family:'Courier New',monospace">This month: £${billing.toLocaleString()}</div>`:'<div style="font-size:10px;color:#aaa;margin-top:3px">No billing this month</div>'}
+        <div style="font-size:10px;color:#555;margin-top:2px">${j.own||'Unassigned'}</div>
+      </td>
+      <td style="padding:10px 12px;vertical-align:top">
+        <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:700;background:${fbColor}22;color:${fbColor};border:1px solid ${fbColor}">${fbLabels[j.fb]||'—'}</span>
+      </td>
+      <td style="padding:10px 12px;vertical-align:top;min-width:280px">
+        <table style="width:100%;border-collapse:collapse">${actions||'<tr><td style="padding:4px 8px;font-size:11px;color:#aaa">No actions</td></tr>'}</table>
+        <div style="font-size:9px;color:#aaa;margin-top:4px">${acDone}/${acTotal} complete</div>
+      </td>
+      <td style="padding:10px 12px;vertical-align:top;font-size:11px;color:#666;font-style:italic">${j.nt||''}</td>
+    </tr>`;
   });
-  o.push('','PIPELINE','─'.repeat(40));
-  (L10D.pipeline||[]).forEach(p=>o.push('  · '+p.name+(p.notes?' — '+p.notes:'')));
-  o.push('',L,'For and on behalf of CLW — CSSW London Waterproofing');
-  return o.join('\n');
+  const pipe=(L10D.pipeline||[]).map(p=>`
+    <tr>
+      <td colspan="4" style="padding:6px 12px;font-size:11px;border-left:4px solid #c47a00">
+        <strong style="color:#1a1a2e">${p.name}</strong>${p.value?` — <span style="color:#c47a00;font-family:'Courier New',monospace">£${p.value.toLocaleString()}</span>`:''}${p.notes?` <span style="color:#888">· ${p.notes}</span>`:''}
+      </td>
+    </tr>`).join('');
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#f0f2f5;color:#1a1a2e}
+    .page{max-width:900px;margin:0 auto;background:white;box-shadow:0 2px 20px rgba(0,0,0,.1)}
+    .header{background:linear-gradient(135deg,#1a1a2e 0%,#006caa 100%);padding:28px 36px;display:flex;align-items:center;justify-content:space-between}
+    .logo-box{background:white;color:#006caa;font-weight:900;font-size:18px;padding:6px 12px;border-radius:4px;letter-spacing:.1em}
+    .header-text{color:white;text-align:right}
+    .header-title{font-size:22px;font-weight:700;letter-spacing:.05em}
+    .header-sub{font-size:12px;opacity:.8;margin-top:3px}
+    .section-header{background:#006caa;color:white;padding:8px 16px;font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase}
+    table{width:100%;border-collapse:collapse}
+    th{background:#1a1a2e;color:white;padding:8px 12px;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;text-align:left}
+    .footer{background:#f8f9fa;border-top:2px solid #006caa;padding:14px 36px;display:flex;justify-content:space-between;font-size:10px;color:#888}
+  </style></head><body>
+  <div class="page">
+    <div class="header">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div class="logo-box">CLW</div>
+        <div style="color:white"><div style="font-size:11px;opacity:.8;letter-spacing:.1em">CSSW LONDON WATERPROOFING</div></div>
+      </div>
+      <div class="header-text">
+        <div class="header-title">L10 Weekly Report</div>
+        <div class="header-sub">Week of ${fmtWk(curMon)}</div>
+        <div class="header-sub">Generated ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
+      </div>
+    </div>
+    <div class="section-header">Live Projects — ${(L10D.liveJobs||[]).length} Active</div>
+    <table>
+      <thead><tr><th>Project · Billing</th><th>AM Feedback</th><th>Actions</th><th>Notes</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${(L10D.pipeline||[]).length>0?`
+    <div class="section-header" style="background:#c47a00">Pipeline — ${(L10D.pipeline||[]).length} Prospects</div>
+    <table><tbody>${pipe}</tbody></table>`:''}
+    <div class="footer">
+      <span>CLW — CSSW London Waterproofing · Confidential</span>
+      <span>${fmtWk(curMon)}</span>
+    </div>
+  </div></body></html>`;
 }
 function copyReport(){navigator.clipboard.writeText(document.getElementById('report-content').textContent).then(()=>showToast('Copied','ok'));}
 function dlReport(){const b=new Blob([document.getElementById('report-content').textContent],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='CLW_L10_'+wKey(curMon)+'.txt';a.click();}
@@ -1308,8 +1380,9 @@ function renderTable(){
   }
 
   let gt=0;
+  const allLive=projects.filter(p=>!p.prospective&&(p.status||'live')==='live');
   const totCells=months.map(m=>{
-    const t=live.reduce((s,p)=>s+((p.fees&&p.fees[m])?+p.fees[m]:0),0);
+    const t=allLive.reduce((s,p)=>s+((p.fees&&p.fees[m])?+p.fees[m]:0),0);
     gt+=t;
     const cls=t>=45000?'tc-green':t>=40000?'tc-amber':'tc-red';
     const isCur=m===cur;
