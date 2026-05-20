@@ -644,7 +644,7 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
         <div class="fee-box">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <div class="fee-tit" style="margin:0">Fee Schedule</div>
-            <div id="modal-fee-summary" style="display:flex;gap:10px;font-size:10px;font-weight:700"></div>
+            <div id="modal-fee-summary" style="display:flex;gap:10px;font-size:10px;font-weight:700;flex-wrap:wrap"></div>
           </div>
           <div class="fee-grid" id="fee-grid" style="grid-template-columns:repeat(auto-fill,minmax(72px,1fr))"></div>
         </div>
@@ -1442,27 +1442,29 @@ function openEdit(id){
   document.getElementById('proj-modal').classList.add('open');
 }
 function buildFeeGrid(existingFees){
-  // Show all months from earliest existing fee through 18 months ahead
+  existingFees=existingFees||{};
   const cur=curYM();
-  const existing=Object.keys(existingFees||{}).sort();
+  const existing=Object.keys(existingFees).sort();
   const start=existing.length?existing[0]:cur;
   const end=nextYM(cur,18);
   const monthSet=new Set();
   let m=start; while(m<=end){monthSet.add(m);m=nextYM(m);}
   existing.forEach(m=>monthSet.add(m));
   const months=[...monthSet].sort();
-  // Group by year
   const byYear={};
   months.forEach(m=>{const y=m.split('-')[0];(byYear[y]=byYear[y]||[]).push(m);});
   let h='';
   Object.keys(byYear).sort().forEach(yr=>{
     h+=`<div style="grid-column:1/-1;font-size:9px;font-weight:700;color:var(--blue);letter-spacing:.1em;text-transform:uppercase;padding:4px 0 2px;border-top:1px solid var(--bdr);margin-top:2px">${yr}</div>`;
     byYear[yr].forEach(ym=>{
-      const v=existingFees&&existingFees[ym]?existingFees[ym]:'';
+      const v=existingFees[ym]||'';
       const past=ym<cur;
-      const inv=existingFees&&existingFees[ym]?` [${getInvState({fees:existingFees,invState:{}},ym)}]`:'';
+      const exP=editId?projects.find(x=>x.id===editId):null;
+      const st=exP&&exP.invState&&exP.invState[ym]?exP.invState[ym]:'forecast';
+      const dotCol=st==='paid'?'#1a7a4a':st==='issued'?'#c47a00':st==='overdue'?'#c0392b':'#b8d8ee';
+      const dot=v?`<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:${dotCol};margin-right:2px;vertical-align:middle"></span>`:'';
       h+=`<div class="fee-it">
-        <div class="fee-lb" style="${past?'color:var(--grey-m)':''}">${MO[+ym.split('-')[1]-1]}${past?' ✓':''}</div>
+        <div class="fee-lb" style="${past?'color:var(--grey-m)':''}">${dot}${MO[+ym.split('-')[1]-1]}${past?' ✓':''}</div>
         <input class="fee-in" type="number" data-ym="${ym}" value="${v}" placeholder="—" style="${past?'opacity:.65':''}" oninput="updateModalSummary()">
       </div>`;
     });
@@ -1475,6 +1477,7 @@ function updateModalSummary(){
   const toAgree=parseFloat(document.getElementById('f-toagree')?.value)||0;
   let scheduled=0;
   document.querySelectorAll('#fee-grid .fee-in').forEach(inp=>{scheduled+=parseFloat(inp.value)||0;});
+  // Left to invoice: agreed+toAgree minus already paid/issued
   let alreadyDone=0;
   if(editId){
     const ex=projects.find(x=>x.id===editId);
@@ -1488,9 +1491,10 @@ function updateModalSummary(){
   const el=document.getElementById('modal-fee-summary');
   if(!el)return;
   el.innerHTML=
-    (total>0?`<span style="color:var(--blue)">Agreed: ${fmtGBP(total)}</span>`:'') +
+    (agreed>0?`<span style="color:var(--blue)">Agreed: ${fmtGBP(agreed)}</span>`:'') +
+    (toAgree>0?`<span style="color:var(--purple)">TBA: ${fmtGBP(toAgree)}</span>`:'') +
     `<span style="color:var(--grey-d)">Scheduled: ${fmtGBP(scheduled)}</span>` +
-    (left!==null?`<span style="color:${left<=0?'var(--green)':left<5000?'var(--amber)':'var(--red)'}">Left: ${left<=0?'✓ Done':fmtGBP(left)}</span>`:'');
+    (left!==null?`<span style="font-weight:700;color:${left<=0?'var(--green)':left<5000?'var(--amber)':'var(--blue)'}">Left: ${left<=0?'✓ Done':fmtGBP(left)}</span>`:'');
 }
 
 function saveProject(){
