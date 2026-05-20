@@ -624,8 +624,8 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
         </div>
         <div class="fgr"><label class="fl">Client</label><input class="fi" id="f-client"></div>
         <div class="fgr"><label class="fl">PM / Contact</label><input class="fi" id="f-pm"></div>
-        <div class="fgr"><label class="fl">Agreed Fee (£)</label><input class="fi" id="f-agreed" type="number" placeholder="0"></div>
-        <div class="fgr"><label class="fl">To Be Agreed (£)</label><input class="fi" id="f-toagree" type="number" placeholder="0"></div>
+        <div class="fgr"><label class="fl">Agreed Fee (£)</label><input class="fi" id="f-agreed" type="number" placeholder="0" oninput="updateModalSummary()"></div>
+        <div class="fgr"><label class="fl">To Be Agreed (£)</label><input class="fi" id="f-toagree" type="number" placeholder="0" oninput="updateModalSummary()"></div>
         <div class="fgr ff"><label class="fl">POP / Instructions</label><input class="fi" id="f-pop"></div>
         <div class="fgr ff"><label class="fl">Notes</label><textarea class="fta" id="f-notes" placeholder="Status, actions…"></textarea></div>
         <div class="fgr" id="stage-grp" style="display:none">
@@ -642,15 +642,11 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
       </div>
       <div id="fee-sec">
         <div class="fee-box">
-          <div class="fee-tit">Fee Schedule — monthly</div>
-          <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
-            <select class="fsel" id="fee-yr" onchange="buildFeeGrid()" style="font-size:10px">
-              <option value="2025">2025</option><option value="2026" selected>2026</option>
-              <option value="2027">2027</option><option value="2028">2028</option>
-            </select>
-            <span style="font-size:10px;color:var(--grey-m)">£ per month</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div class="fee-tit" style="margin:0">Fee Schedule</div>
+            <div id="modal-fee-summary" style="display:flex;gap:10px;font-size:10px;font-weight:700"></div>
           </div>
-          <div class="fee-grid" id="fee-grid"></div>
+          <div class="fee-grid" id="fee-grid" style="grid-template-columns:repeat(auto-fill,minmax(72px,1fr))"></div>
         </div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:14px">
@@ -1467,12 +1463,36 @@ function buildFeeGrid(existingFees){
       const inv=existingFees&&existingFees[ym]?` [${getInvState({fees:existingFees,invState:{}},ym)}]`:'';
       h+=`<div class="fee-it">
         <div class="fee-lb" style="${past?'color:var(--grey-m)':''}">${MO[+ym.split('-')[1]-1]}${past?' ✓':''}</div>
-        <input class="fee-in" type="number" data-ym="${ym}" value="${v}" placeholder="—" style="${past?'opacity:.65':''}">
+        <input class="fee-in" type="number" data-ym="${ym}" value="${v}" placeholder="—" style="${past?'opacity:.65':''}" oninput="updateModalSummary()">
       </div>`;
     });
   });
   const g=document.getElementById('fee-grid'); if(g)g.innerHTML=h;
+  updateModalSummary();
 }
+function updateModalSummary(){
+  const agreed=parseFloat(document.getElementById('f-agreed')?.value)||0;
+  const toAgree=parseFloat(document.getElementById('f-toagree')?.value)||0;
+  let scheduled=0;
+  document.querySelectorAll('#fee-grid .fee-in').forEach(inp=>{scheduled+=parseFloat(inp.value)||0;});
+  let alreadyDone=0;
+  if(editId){
+    const ex=projects.find(x=>x.id===editId);
+    if(ex)alreadyDone=Object.entries(ex.invState||{}).reduce((s,[ym,st])=>{
+      if(st==='paid'||st==='issued')return s+((ex.fees&&ex.fees[ym])?+ex.fees[ym]:0);
+      return s;
+    },0);
+  }
+  const total=agreed+toAgree;
+  const left=total>0?total-alreadyDone:null;
+  const el=document.getElementById('modal-fee-summary');
+  if(!el)return;
+  el.innerHTML=
+    (total>0?`<span style="color:var(--blue)">Agreed: ${fmtGBP(total)}</span>`:'') +
+    `<span style="color:var(--grey-d)">Scheduled: ${fmtGBP(scheduled)}</span>` +
+    (left!==null?`<span style="color:${left<=0?'var(--green)':left<5000?'var(--amber)':'var(--red)'}">Left: ${left<=0?'✓ Done':fmtGBP(left)}</span>`:'');
+}
+
 function saveProject(){
   const name=document.getElementById('f-name').value.trim();
   if(!name){showToast('Name required','err');return;}
