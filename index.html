@@ -1759,6 +1759,9 @@ function subscribeToFirestore() {
 }
 
 // Save everything to Firestore
+function cleanForFirestore(obj){
+  return JSON.parse(JSON.stringify(obj,function(_,v){return v===undefined?null:v;}));
+}
 async function saveAll(){
   if(!_fbReady){markUnsaved();return;}
   updateSyncUI('saving');
@@ -1768,11 +1771,10 @@ async function saveAll(){
     const{getFirestore,doc,setDoc}=window.firebase_fs;
     const docRef=doc(db,'clwhub','main');
     const now=new Date();
-    const payload=JSON.parse(JSON.stringify({projects,scorecard,qtrWeeks,teamColors,teamPeople,
+    await setDoc(docRef,cleanForFirestore({projects,scorecard,qtrWeeks,teamColors,teamPeople,
       l10Data:l10LoadAll(),wheelData:WHEEL_DATA,
       savedAt:now.toLocaleDateString('en-GB')+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
-      version:'8.5'},(_,v)=>v===undefined?null:v));
-    await setDoc(docRef,payload);
+      version:'8.5'}));
     markSaved();updateSyncUI('connected');
   }catch(e){
     console.error('Firestore save error',e);
