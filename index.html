@@ -1745,10 +1745,9 @@ function applyFirestoreData(d) {
 function subscribeToFirestore() {
   if (!_fbReady) return;
   const { getFirestore, doc, onSnapshot } = window.firebase_fs;
-  const mainRef = doc(db, 'clwhub', 'main');
-  const wheelsRef = doc(db, 'clwhub', 'wheels');
+  const docRef = doc(db, 'clwhub', 'main');
   if (fbUnsubscribe) fbUnsubscribe();
-  fbUnsubscribe = onSnapshot(mainRef, (snap) => {
+  fbUnsubscribe = onSnapshot(docRef, (snap) => {
     if (!snap.exists()) { showToast('No cloud data yet — Save to create it', 'ok'); return; }
     if(_suppressNextLoad||Date.now()<_suppressUntil){_suppressNextLoad=false;return;}
     applyFirestoreData(snap.data());
@@ -1756,9 +1755,6 @@ function subscribeToFirestore() {
   }, (err) => {
     console.error('Firestore listen error', err);
     updateSyncUI('error');
-  });
-  onSnapshot(wheelsRef, (snap) => {
-    if (snap.exists() && snap.data().wheelData) Object.assign(WHEEL_DATA, snap.data().wheelData);
   });
 }
 
@@ -1772,11 +1768,14 @@ async function saveAll(){
     const{getFirestore,doc,setDoc}=window.firebase_fs;
     const docRef=doc(db,'clwhub','main');
     const now=new Date();
-    const ts=now.toLocaleDateString('en-GB')+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-    await setDoc(docRef,{projects,scorecard,qtrWeeks,teamColors,teamPeople,
-      l10Data:l10LoadAll(),savedAt:ts,version:'8.5'});
-    const wheelsRef=doc(db,'clwhub','wheels');
-    await setDoc(wheelsRef,{wheelData:WHEEL_DATA,savedAt:ts});
+    // Strip undefined values (Firestore rejects them)
+    function stripUndefined(obj){
+      return JSON.parse(JSON.stringify(obj, (_,v)=>v===undefined?null:v));
+    }
+    await setDoc(docRef,stripUndefined({projects,scorecard,qtrWeeks,teamColors,teamPeople,
+      l10Data:l10LoadAll(),wheelData:WHEEL_DATA,
+      savedAt:now.toLocaleDateString('en-GB')+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+      version:'8.5'}));
     markSaved();updateSyncUI('connected');
   }catch(e){
     console.error('Firestore save error',e);
