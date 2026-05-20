@@ -1518,7 +1518,7 @@ function saveProject(){
     pop:document.getElementById('f-pop').value,
     notes:document.getElementById('f-notes').value,
     prospective:isProspect,
-    stage:isProspect?document.getElementById('f-stage').value:undefined,
+    stage:isProspect?(document.getElementById('f-stage').value||null):null,
     hourlyRate:!!(fb&&fb.value==='hr')
   };
   if(editId){
@@ -1768,14 +1768,11 @@ async function saveAll(){
     const{getFirestore,doc,setDoc}=window.firebase_fs;
     const docRef=doc(db,'clwhub','main');
     const now=new Date();
-    // Strip undefined values (Firestore rejects them)
-    function stripUndefined(obj){
-      return JSON.parse(JSON.stringify(obj, (_,v)=>v===undefined?null:v));
-    }
-    await setDoc(docRef,stripUndefined({projects,scorecard,qtrWeeks,teamColors,teamPeople,
+    const payload=JSON.parse(JSON.stringify({projects,scorecard,qtrWeeks,teamColors,teamPeople,
       l10Data:l10LoadAll(),wheelData:WHEEL_DATA,
       savedAt:now.toLocaleDateString('en-GB')+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
-      version:'8.5'}));
+      version:'8.5'},(_,v)=>v===undefined?null:v));
+    await setDoc(docRef,payload);
     markSaved();updateSyncUI('connected');
   }catch(e){
     console.error('Firestore save error',e);
