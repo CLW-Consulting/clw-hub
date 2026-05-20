@@ -1188,16 +1188,14 @@ function getTableMonths(){
   });
 }
 
-// Left to invoice = agreed minus what is already paid or issued
-// Forecasted amounts still count as left to invoice
+// Left to invoice = sum of fees marked as forecast only (not issued, not paid)
 function calcLeftToInvoice(p){
-  const agreed=(+p.agreed||0)+(+p.toAgree||0);
-  if(!agreed) return null;
-  const done=Object.entries(p.invState||{}).reduce((s,[ym,st])=>{
-    if(st==='paid'||st==='issued') return s+((p.fees&&p.fees[ym])?+p.fees[ym]:0);
-    return s;
+  if(!p.fees||!Object.keys(p.fees).length) return null;
+  const forecastOnly=Object.entries(p.fees).reduce((s,[ym,v])=>{
+    const st=getEffectiveState(p,ym);
+    return st==='forecast'||st==='overdue'?s+(+v||0):s;
   },0);
-  return agreed-done;
+  return forecastOnly;
 }
 
 function renderTable(){
@@ -1275,9 +1273,9 @@ function renderTable(){
 
     const feeSummary=`<div class="fee-summary"><div class="fee-divider"></div>
       ${agreed>0?`<div class="fee-row r-agreed"><span class="fee-lbl">Agreed</span><span class="fee-amt">${fmtGBP(agreed)}</span></div>`:''}
-      ${toAgree>0?`<div class="fee-row"><span class="fee-lbl" style="color:var(--purple)">To agree</span><span class="fee-amt" style="color:var(--purple)">${fmtGBP(toAgree)}</span></div>`:''}
-      <div class="fee-row r-invoiced"><span class="fee-lbl">Scheduled</span><span class="fee-amt">${fmtGBP(totalSched)}</span></div>
-      ${left!==null?`<div class="fee-row"><span class="fee-lbl">Left to invoice</span><span class="fee-amt" style="color:${left<=0?'var(--green)':left<5000?'var(--amber)':'var(--blue)'};font-weight:700">${left<=0?'✓ Done':fmtGBP(left)}</span></div>`:''}
+      ${toAgree>0?`<div class="fee-row"><span class="fee-lbl" style="color:var(--purple)">To be agreed</span><span class="fee-amt" style="color:var(--purple)">${fmtGBP(toAgree)}</span></div>`:''}
+      ${left!==null&&left>0?`<div class="fee-row"><span class="fee-lbl" style="font-weight:700">Left to invoice</span><span class="fee-amt" style="color:var(--blue);font-weight:700">${fmtGBP(left)}</span></div>`:''}
+      ${left===0?`<div class="fee-row"><span class="fee-lbl">Left to invoice</span><span class="fee-amt" style="color:var(--green);font-weight:700">✓ Done</span></div>`:''}
     </div>`;
 
     return`<tr class="${isHold?'row-hold':''}" data-id="${p.id}">
@@ -1475,26 +1473,26 @@ function buildFeeGrid(existingFees){
 function updateModalSummary(){
   const agreed=parseFloat(document.getElementById('f-agreed')?.value)||0;
   const toAgree=parseFloat(document.getElementById('f-toagree')?.value)||0;
-  let scheduled=0;
-  document.querySelectorAll('#fee-grid .fee-in').forEach(inp=>{scheduled+=parseFloat(inp.value)||0;});
-  // Left to invoice: agreed+toAgree minus already paid/issued
-  let alreadyDone=0;
-  if(editId){
-    const ex=projects.find(x=>x.id===editId);
-    if(ex)alreadyDone=Object.entries(ex.invState||{}).reduce((s,[ym,st])=>{
-      if(st==='paid'||st==='issued')return s+((ex.fees&&ex.fees[ym])?+ex.fees[ym]:0);
-      return s;
-    },0);
-  }
-  const total=agreed+toAgree;
-  const left=total>0?total-alreadyDone:null;
+  // Left to invoice = forecast-only fees in the grid
+  // For edit: use existing invState to determine which grid fees are forecast
+  let forecastTotal=0;
+  document.querySelectorAll('#fee-grid .fee-in').forEach(inp=>{
+    const v=parseFloat(inp.value)||0;
+    if(!v)return;
+    const ym=inp.dataset.ym;
+    let st='forecast';
+    if(editId){
+      const ex=projects.find(x=>x.id===editId);
+      if(ex)st=getEffectiveState(ex,ym);
+    }
+    if(st==='forecast'||st==='overdue')forecastTotal+=v;
+  });
   const el=document.getElementById('modal-fee-summary');
   if(!el)return;
   el.innerHTML=
-    (agreed>0?`<span style="color:var(--blue)">Agreed: ${fmtGBP(agreed)}</span>`:'') +
-    (toAgree>0?`<span style="color:var(--purple)">TBA: ${fmtGBP(toAgree)}</span>`:'') +
-    `<span style="color:var(--grey-d)">Scheduled: ${fmtGBP(scheduled)}</span>` +
-    (left!==null?`<span style="font-weight:700;color:${left<=0?'var(--green)':left<5000?'var(--amber)':'var(--blue)'}">Left: ${left<=0?'✓ Done':fmtGBP(left)}</span>`:'');
+    (agreed>0?`<span style="color:var(--blue);font-weight:700">Agreed: ${fmtGBP(agreed)}</span>`:'<span style="color:var(--grey-m)">No agreed fee</span>') +
+    (toAgree>0?`<span style="color:var(--purple);font-weight:700">TBA: ${fmtGBP(toAgree)}</span>`:'') +
+    (forecastTotal>0?`<span style="color:var(--blue);font-weight:700">Left to invoice: ${fmtGBP(forecastTotal)}</span>`:'<span style="color:var(--green);font-weight:700">✓ Fully invoiced</span>');
 }
 
 function saveProject(){
