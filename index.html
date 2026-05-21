@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CLW — Command Centre</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +21,7 @@
   --fc-issued:#fff3cd;--fc-issued-t:#856404;
   --fc-paid:#c8ead8;--fc-paid-t:#1a7a4a;
   --fc-overdue:#f9c9c4;--fc-overdue-t:#c0392b;
-  --f:'Barlow','Segoe UI',sans-serif;
+  --f:'Mulish','Barlow','Segoe UI',sans-serif;
   --fc:'Barlow Condensed',sans-serif;
   --r:3px;--rl:4px;
   --sh:0 1px 3px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04);
@@ -87,7 +89,7 @@ body{background:var(--off);color:var(--black);font-family:var(--f);font-size:13p
 
 /* ── STATS ── */
 .sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
-.sc{background:var(--white);border:1px solid var(--bdr);border-radius:var(--rl);padding:12px 14px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.sc{font-family:'Mulish',sans-serif;background:var(--white);border:1px solid var(--bdr);border-radius:var(--rl);padding:12px 14px;box-shadow:var(--sh);position:relative;overflow:hidden}
 .sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .sc.cb::before{background:var(--blue)}.sc.cg::before{background:var(--green)}
 .sc.ca::before{background:var(--amber)}.sc.cr::before{background:var(--red)}.sc.cm::before{background:var(--grey-m)}
@@ -190,7 +192,7 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
 .scgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:12px}
 .pc{background:var(--off);border:1px solid var(--bdr);border-radius:var(--rl);overflow:hidden}
 .ph2{padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
-.pn{font-size:13px;font-weight:700;color:white}
+.pn{font-size:16px;font-weight:700;color:white}
 .pb2{padding:12px 14px}
 .pr{margin-bottom:8px}
 .pm{display:flex;justify-content:space-between;font-size:10px;color:var(--grey-d);margin-bottom:3px;font-weight:500}
@@ -328,8 +330,7 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
 <div id="ls">
   <div class="lcard" style="text-align:center">
     <div class="clw-mark" style="justify-content:center;margin-bottom:20px">
-      <div class="clw-box"><span>CLW</span></div>
-      <div class="clw-wds"><div class="l1">CSSW LONDON</div><div class="l1">WATERPROOFING</div></div>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.74 59.75" style="height:32px;width:auto;display:block"><defs><style>.cls-1{fill:#0075ae;}.cls-2{fill:#fff;}</style></defs><rect class="cls-1" width="100.74" height="59.75"/><path class="cls-2" d="M25.91,43.23c-6.94,0-13.01-5.25-13.01-13.36s6.08-13.36,13.01-13.36c2.95,0,5.18.79,6.94,1.75v4.84c-2.03-1.34-3.91-2.09-6.49-2.09-4.5,0-8.55,3.4-8.55,8.86s4.05,8.89,8.55,8.89c2.58,0,4.46-.86,6.49-2.2v4.91c-1.75.96-3.98,1.75-6.94,1.75Z"/><path class="cls-2" d="M37.45,17.1h4.81v21.15h10.81v4.43h-15.62v-25.58Z"/><path class="cls-2" d="M69.58,23.66h-.03l-5.84,19.02h-5.05l-7.62-25.58h4.91l5.36,19.64h.07l5.91-19.64h4.53l6.01,19.67h.03l5.18-19.67h4.81l-7.48,25.58h-4.91l-5.87-19.02Z"/></svg>
     </div>
     <div class="ltitle" style="margin-bottom:4px">CLW Command Centre</div>
     <div class="ldesc" style="margin-bottom:20px">Enter your access password to continue</div>
@@ -353,8 +354,7 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
   <aside class="sb">
     <div class="sb-logo">
       <div class="sb-lm">
-        <div class="sb-box"><span>CLW</span></div>
-        <div class="sb-wds"><div class="w1">CSSW London</div><div class="w2">Waterproofing</div></div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.74 59.75" style="height:36px;width:auto;display:block"><defs><style>.cls-1{fill:#0075ae;}.cls-2{fill:#fff;}</style></defs><rect class="cls-1" width="100.74" height="59.75"/><path class="cls-2" d="M25.91,43.23c-6.94,0-13.01-5.25-13.01-13.36s6.08-13.36,13.01-13.36c2.95,0,5.18.79,6.94,1.75v4.84c-2.03-1.34-3.91-2.09-6.49-2.09-4.5,0-8.55,3.4-8.55,8.86s4.05,8.89,8.55,8.89c2.58,0,4.46-.86,6.49-2.2v4.91c-1.75.96-3.98,1.75-6.94,1.75Z"/><path class="cls-2" d="M37.45,17.1h4.81v21.15h10.81v4.43h-15.62v-25.58Z"/><path class="cls-2" d="M69.58,23.66h-.03l-5.84,19.02h-5.05l-7.62-25.58h4.91l5.36,19.64h.07l5.91-19.64h4.53l6.01,19.67h.03l5.18-19.67h4.81l-7.48,25.58h-4.91l-5.87-19.02Z"/></svg>
       </div>
     </div>
     <nav class="nsec">
@@ -405,13 +405,10 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
           <div class="ch"><div class="ct">Fee Performance — Auto-calculated</div><div style="font-size:10px;color:var(--grey-d)" id="dash-qtr-label"></div></div>
           <div class="l10-metrics-grid" id="dash-l10-metrics" style="border:none;border-radius:0;margin:0"></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 260px;gap:12px;margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
           <div class="card"><div class="ch"><div class="ct">This Month — Invoices</div></div><div id="this-month"></div></div>
           <div class="card"><div class="ch"><div class="ct">Next Month — Invoices</div></div><div id="next-month"></div></div>
-          <div class="card">
-            <div class="ch"><div class="ct">Monthly Invoicing</div><div style="font-size:9px;color:var(--grey-d)">Per month + Qtr avg</div></div>
-            <div id="monthly-invoicing" style="max-height:300px;overflow-y:auto"></div>
-          </div>
+
         </div>
         <div class="card">
           <div class="ch"><div class="ct">Fee Forecast — 6 Past + 12 Future Months</div><div style="font-size:9px;color:var(--grey-m)">Grey = past · Coloured = future</div></div>
@@ -581,6 +578,8 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
             <option value="q3_personal">Personal — Q3</option>
             <option value="q4_personal">Personal — Q4</option>
           </select>
+          <button class="btn btn-s btn-sm" onclick="addWheel()">+ Add Wheel</button>
+          <button class="btn btn-d btn-sm" onclick="removeWheel()">✕ Remove</button>
           <button class="btn btn-p btn-sm" onclick="saveAll()">↓ Save</button>
         </div>
       </div>
@@ -902,7 +901,7 @@ function renderDashboard(){
   renderChart('dash-chart');
 }
 function renderChart(cid){
-  const live=projects.filter(p=>!p.prospective&&(p.status||'live')!=='complete');
+  const live=projects.filter(p=>!p.prospective);
   const cur=curYM();
   const months=Array.from({length:19},(_,i)=>nextYM(cur,i-6));
   const data=months.map(ym=>({ym,total:live.reduce((s,p)=>s+((p.fees&&p.fees[ym])?+p.fees[ym]:0),0),isPast:ym<cur}));
@@ -1002,9 +1001,7 @@ function rL10Metrics(){
 // Get this month's billing for a project name
 function getProjectBilling(name){
   const ym=curYM();
-  const key=name.toLowerCase().replace(/[^a-z0-9]/g,' ').trim().split(' ').filter(w=>w.length>2)[0]||name.toLowerCase().slice(0,5);
-  const p=projects.filter(x=>!x.prospective&&(x.status||'live')!=='complete')
-    .find(x=>x.name.toLowerCase().includes(key));
+  const p=projects.filter(x=>!x.prospective).find(x=>x.name.toLowerCase().includes(name.toLowerCase().split(' ')[0].toLowerCase()));
   return p&&p.fees&&p.fees[ym]?+p.fees[ym]:null;
 }
 
@@ -1146,90 +1143,20 @@ function saveL10Project(){
   l10QueueSave();
 }
 // L10 Report
-function openL10Report(){
-  const html=buildL10Report();
-  const w=window.open('','_blank');
-  w.document.write(html);
-  w.document.close();
-}
+function openL10Report(){document.getElementById('report-content').textContent=buildL10Report();document.getElementById('report-modal').classList.add('open');}
 function buildL10Report(){
-  const ym=curYM();
-  const fbColors={nr:'#888',pd:'#c47a00',rc:'#1a7a4a',hd:'#c0392b'};
-  const fbLabels={nr:'Not Requested',pd:'Pending',rc:'Received',hd:'Hold'};
-  let rows='';
-  (L10D.liveJobs||[]).forEach((j,i)=>{
-    const billing=getProjectBilling(j.name);
-    const fbColor=fbColors[j.fb]||'#888';
-    const acDone=(j.ac||[]).filter(a=>a.d).length;
-    const acTotal=(j.ac||[]).length;
-    const actions=(j.ac||[]).filter(a=>a.t).map(a=>`
-      <tr>
-        <td style="padding:4px 8px;font-size:11px;color:${a.d?'#999':'#222'};text-decoration:${a.d?'line-through':'none'}">
-          ${a.d?'✓':'○'} ${a.t}${a.owner?' <span style="color:#006caa;font-size:10px">('+a.owner+')</span>':''}
-        </td>
-      </tr>`).join('');
-    rows+=`
-    <tr style="background:${i%2===0?'#f8f9fa':'white'}">
-      <td style="padding:10px 12px;border-left:4px solid ${fbColor};vertical-align:top;min-width:160px">
-        <div style="font-weight:700;font-size:13px;color:#1a1a2e">${j.name}</div>
-        ${billing?`<div style="font-size:10px;font-weight:700;color:#006caa;margin-top:3px;font-family:'Courier New',monospace">This month: £${billing.toLocaleString()}</div>`:'<div style="font-size:10px;color:#aaa;margin-top:3px">No billing this month</div>'}
-        <div style="font-size:10px;color:#555;margin-top:2px">${j.own||'Unassigned'}</div>
-      </td>
-      <td style="padding:10px 12px;vertical-align:top">
-        <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:700;background:${fbColor}22;color:${fbColor};border:1px solid ${fbColor}">${fbLabels[j.fb]||'—'}</span>
-      </td>
-      <td style="padding:10px 12px;vertical-align:top;min-width:280px">
-        <table style="width:100%;border-collapse:collapse">${actions||'<tr><td style="padding:4px 8px;font-size:11px;color:#aaa">No actions</td></tr>'}</table>
-        <div style="font-size:9px;color:#aaa;margin-top:4px">${acDone}/${acTotal} complete</div>
-      </td>
-      <td style="padding:10px 12px;vertical-align:top;font-size:11px;color:#666;font-style:italic">${j.nt||''}</td>
-    </tr>`;
+  const wk=fmtWk(curMon),L='─'.repeat(60);
+  let o=['CLW — CSSW LONDON WATERPROOFING','L10 WEEKLY LEADERSHIP REPORT','Week of: '+wk,L,''];
+  o.push('LIVE JOBS','─'.repeat(40));
+  (L10D.liveJobs||[]).forEach(j=>{
+    o.push('');
+    o.push('▸ '+j.name.toUpperCase()+'  |  Feedback: '+(FBL[j.fb]||'').toUpperCase()+'  |  Owner: '+(j.own||''));
+    (j.ac||[]).forEach(a=>o.push('  '+(a.d?'[✓]':'[ ]')+' '+a.t+(a.owner?' ('+a.owner+')':'')));
   });
-  const pipe=(L10D.pipeline||[]).map(p=>`
-    <tr>
-      <td colspan="4" style="padding:6px 12px;font-size:11px;border-left:4px solid #c47a00">
-        <strong style="color:#1a1a2e">${p.name}</strong>${p.value?` — <span style="color:#c47a00;font-family:'Courier New',monospace">£${p.value.toLocaleString()}</span>`:''}${p.notes?` <span style="color:#888">· ${p.notes}</span>`:''}
-      </td>
-    </tr>`).join('');
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <style>
-    body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#f0f2f5;color:#1a1a2e}
-    .page{max-width:900px;margin:0 auto;background:white;box-shadow:0 2px 20px rgba(0,0,0,.1)}
-    .header{background:linear-gradient(135deg,#1a1a2e 0%,#006caa 100%);padding:28px 36px;display:flex;align-items:center;justify-content:space-between}
-    .logo-box{background:white;color:#006caa;font-weight:900;font-size:18px;padding:6px 12px;border-radius:4px;letter-spacing:.1em}
-    .header-text{color:white;text-align:right}
-    .header-title{font-size:22px;font-weight:700;letter-spacing:.05em}
-    .header-sub{font-size:12px;opacity:.8;margin-top:3px}
-    .section-header{background:#006caa;color:white;padding:8px 16px;font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase}
-    table{width:100%;border-collapse:collapse}
-    th{background:#1a1a2e;color:white;padding:8px 12px;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;text-align:left}
-    .footer{background:#f8f9fa;border-top:2px solid #006caa;padding:14px 36px;display:flex;justify-content:space-between;font-size:10px;color:#888}
-  </style></head><body>
-  <div class="page">
-    <div class="header">
-      <div style="display:flex;align-items:center;gap:14px">
-        <div class="logo-box">CLW</div>
-        <div style="color:white"><div style="font-size:11px;opacity:.8;letter-spacing:.1em">CSSW LONDON WATERPROOFING</div></div>
-      </div>
-      <div class="header-text">
-        <div class="header-title">L10 Weekly Report</div>
-        <div class="header-sub">Week of ${fmtWk(curMon)}</div>
-        <div class="header-sub">Generated ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
-      </div>
-    </div>
-    <div class="section-header">Live Projects — ${(L10D.liveJobs||[]).length} Active</div>
-    <table>
-      <thead><tr><th>Project · Billing</th><th>AM Feedback</th><th>Actions</th><th>Notes</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    ${(L10D.pipeline||[]).length>0?`
-    <div class="section-header" style="background:#c47a00">Pipeline — ${(L10D.pipeline||[]).length} Prospects</div>
-    <table><tbody>${pipe}</tbody></table>`:''}
-    <div class="footer">
-      <span>CLW — CSSW London Waterproofing · Confidential</span>
-      <span>${fmtWk(curMon)}</span>
-    </div>
-  </div></body></html>`;
+  o.push('','PIPELINE','─'.repeat(40));
+  (L10D.pipeline||[]).forEach(p=>o.push('  · '+p.name+(p.notes?' — '+p.notes:'')));
+  o.push('',L,'For and on behalf of CLW — CSSW London Waterproofing');
+  return o.join('\n');
 }
 function copyReport(){navigator.clipboard.writeText(document.getElementById('report-content').textContent).then(()=>showToast('Copied','ok'));}
 function dlReport(){const b=new Blob([document.getElementById('report-content').textContent],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='CLW_L10_'+wKey(curMon)+'.txt';a.click();}
@@ -1380,9 +1307,8 @@ function renderTable(){
   }
 
   let gt=0;
-  const allLive=projects.filter(p=>!p.prospective&&(p.status||'live')==='live');
   const totCells=months.map(m=>{
-    const t=allLive.reduce((s,p)=>s+((p.fees&&p.fees[m])?+p.fees[m]:0),0);
+    const t=live.reduce((s,p)=>s+((p.fees&&p.fees[m])?+p.fees[m]:0),0);
     gt+=t;
     const cls=t>=45000?'tc-green':t>=40000?'tc-amber':'tc-red';
     const isCur=m===cur;
@@ -1717,8 +1643,8 @@ function renderScorecard(){
     const color=teamColors[name]||'#6b7580';
     const pd=qd[name]||{billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)};
     if(!pd.billable)pd.billable=new Array(13).fill(0);if(!pd.holiday)pd.holiday=new Array(13).fill(0);if(!pd.sick)pd.sick=new Array(13).fill(0);
-    const totH=pd.billable.reduce((s,v)=>s+(+v||0),0),totD=totH/8,totHol=pd.holiday.reduce((s,v)=>s+(+v||0),0),pct=Math.min((totD/45)*100,100);
-    return`<div class="pc"><div class="ph2" style="background:${color}"><div class="pn">${name}</div><div style="font-size:9px;color:rgba(255,255,255,.65);font-weight:600">${qtr.replace('-',' ')}</div></div><div class="pb2"><div class="pr"><div class="pm"><span>Billable Days</span><span class="val">${totD.toFixed(1)} / 45</span></div><div class="pbg"><div class="pf" style="width:${pct}%;background:${color}"></div></div></div><div style="display:flex;gap:12px;margin-bottom:8px;font-size:10px;color:var(--grey-d);font-weight:500"><span>Total: <strong style="color:var(--black)">${totH.toFixed(1)} hrs</strong></span><span>Holiday: <strong style="color:var(--black)">${totHol} days</strong></span></div><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin-bottom:3px">Billable hrs / week</div><div class="wg">${weeks.slice(0,13).map((w,i)=>`<div class="wc"><div class="wl">${w}</div><input class="wi" type="number" value="${pd.billable[i]||0}" oninput="scorecard['${qtr}']['${name}'].billable[${i}]=+this.value||0;markUnsaved()"></div>`).join('')}</div><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin:5px 0 3px">Holiday / Sick</div><div class="wg">${weeks.slice(0,13).map((w,i)=>`<div class="wc"><div class="wl">${w}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px"><input class="wi" type="number" value="${pd.holiday[i]||0}" title="Holiday" placeholder="H" oninput="scorecard['${qtr}']['${name}'].holiday[${i}]=+this.value||0;markUnsaved()"><input class="wi" type="number" value="${pd.sick[i]||0}" title="Sick" placeholder="S" style="border-color:#fdecea" oninput="scorecard['${qtr}']['${name}'].sick[${i}]=+this.value||0;markUnsaved()"></div></div>`).join('')}</div></div></div>`;
+    const totH=pd.billable.reduce((s,v)=>s+(+v||0),0),totD=totH/8,totHol=pd.holiday.reduce((s,v)=>s+(+v||0),0),qtarget=(name==='Andrea'?18:45),pct=Math.min((totD/qtarget)*100,100);
+    return`<div class="pc"><div class="ph2" style="background:${color}"><div class="pn">${name}</div><div style="font-size:9px;color:rgba(255,255,255,.65);font-weight:600">${qtr.replace('-',' ')}</div></div><div class="pb2"><div class="pr"><div class="pm"><span>Billable Days</span><span class="val">${totD.toFixed(1)} / ${qtarget}</span></div><div class="pbg"><div class="pf" style="width:${pct}%;background:${color}"></div></div></div><div style="display:flex;gap:12px;margin-bottom:8px;font-size:10px;color:var(--grey-d);font-weight:500"><span>Total: <strong style="color:var(--black)">${totH.toFixed(1)} hrs</strong></span><span>Holiday: <strong style="color:var(--black)">${totHol} days</strong></span></div><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin-bottom:3px">Billable hrs / week</div><div class="wg">${weeks.slice(0,13).map((w,i)=>`<div class="wc"><div class="wl">${w}</div><input class="wi" type="number" value="${pd.billable[i]||0}" oninput="scorecard['${qtr}']['${name}'].billable[${i}]=+this.value||0;markUnsaved()"></div>`).join('')}</div><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin:5px 0 3px">Holiday / Sick</div><div class="wg">${weeks.slice(0,13).map((w,i)=>`<div class="wc"><div class="wl">${w}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px"><input class="wi" type="number" value="${pd.holiday[i]||0}" title="Holiday" placeholder="H" oninput="scorecard['${qtr}']['${name}'].holiday[${i}]=+this.value||0;markUnsaved()"><input class="wi" type="number" value="${pd.sick[i]||0}" title="Sick" placeholder="S" style="border-color:#fdecea" oninput="scorecard['${qtr}']['${name}'].sick[${i}]=+this.value||0;markUnsaved()"></div></div>`).join('')}</div></div></div>`;
   }).join('');
 }
 function openNewQtrModal(){document.getElementById('qtr-modal').classList.add('open')}
@@ -2128,49 +2054,53 @@ function drawWheel(segments) {
   ctx.fillText('1  2  3  4  5  6  7  8  9  10', cx, cy);
 }
 
-function renderWheelInputs(key) {
-  const data = WHEEL_DATA[key];
-  const segs = data.segments;
-  const container = document.getElementById('wheel-inputs');
-  if (!container) return;
-
-  container.innerHTML = segs.map((s, i) => {
-    const color = WHEEL_COLORS[i % WHEEL_COLORS.length];
-    return `
-    <div style="margin-bottom:12px;padding:10px 12px;background:var(--off);border-radius:var(--r);border-left:3px solid ${color}">
-      <div style="font-size:11px;font-weight:700;color:var(--black);margin-bottom:7px;display:flex;align-items:center;gap:6px">
+function renderWheelInputs(key){
+  const data=WHEEL_DATA[key];
+  const segs=data.segments;
+  const container=document.getElementById('wheel-inputs');
+  if(!container)return;
+  container.innerHTML=segs.map((s,i)=>{
+    const color=WHEEL_COLORS[i%WHEEL_COLORS.length];
+    return`<div style="margin-bottom:10px;padding:9px 11px;background:var(--off);border-radius:var(--r);border-left:3px solid ${color}">
+      <div style="font-size:12px;font-weight:700;color:var(--black);margin-bottom:6px;display:flex;align-items:center;gap:6px">
         <span>${s.name}</span>
-        ${s.priority>0?`<span style="background:#c0392b;color:white;font-size:8px;font-weight:700;padding:1px 5px;border-radius:10px">P${s.priority}</span>`:''}
+        ${s.priority>0?`<span style="background:#c0392b;color:white;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px">P${s.priority}</span>`:''}
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:7px">
         <div>
-          <div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin-bottom:3px">Current</div>
-          <input type="number" min="0" max="10" value="${s.current}"
-            style="width:100%;padding:5px 8px;border:1px solid var(--bdr);border-radius:var(--r);font-family:var(--f);font-size:13px;font-weight:700;color:${color};background:white;outline:none"
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:var(--grey-d);margin-bottom:2px">Current</div>
+          <input type="number" min="0" max="10" value="${s.current||0}"
+            style="width:100%;padding:5px 7px;border:1px solid var(--bdr);border-radius:var(--r);font-size:14px;font-weight:700;color:${color};outline:none"
             oninput="WHEEL_DATA['${key}'].segments[${i}].current=Math.min(10,Math.max(0,+this.value||0));drawWheel(WHEEL_DATA['${key}'].segments);markUnsaved()">
         </div>
         <div>
-          <div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin-bottom:3px">Ideal</div>
-          <input type="number" min="0" max="10" value="${s.ideal}"
-            style="width:100%;padding:5px 8px;border:1px solid var(--bdr);border-radius:var(--r);font-family:var(--f);font-size:13px;font-weight:700;color:var(--blue);background:white;outline:none"
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:var(--grey-d);margin-bottom:2px">Ideal</div>
+          <input type="number" min="0" max="10" value="${s.ideal||0}"
+            style="width:100%;padding:5px 7px;border:1px solid var(--bdr);border-radius:var(--r);font-size:14px;font-weight:700;color:var(--blue);outline:none"
             oninput="WHEEL_DATA['${key}'].segments[${i}].ideal=Math.min(10,Math.max(0,+this.value||0));drawWheel(WHEEL_DATA['${key}'].segments);markUnsaved()">
         </div>
         <div>
-          <div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin-bottom:3px">Priority</div>
-          <input type="number" min="0" max="10" value="${s.priority}"
-            style="width:100%;padding:5px 8px;border:1px solid var(--bdr);border-radius:var(--r);font-family:var(--f);font-size:13px;font-weight:700;color:var(--red);background:white;outline:none"
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:var(--grey-d);margin-bottom:2px">Priority</div>
+          <input type="number" min="0" max="10" value="${s.priority||0}"
+            style="width:100%;padding:5px 7px;border:1px solid var(--bdr);border-radius:var(--r);font-size:14px;font-weight:700;color:var(--red);outline:none"
             oninput="WHEEL_DATA['${key}'].segments[${i}].priority=Math.min(10,Math.max(0,+this.value||0));drawWheel(WHEEL_DATA['${key}'].segments);markUnsaved()">
         </div>
       </div>
-      <div style="margin-top:6px">
-        <div style="height:5px;background:var(--bdr);border-radius:10px;overflow:hidden;position:relative">
-          <div style="position:absolute;top:0;left:0;height:100%;width:${(s.ideal/10)*100}%;background:rgba(0,108,170,0.2);border-radius:10px"></div>
-          <div style="position:absolute;top:0;left:0;height:100%;width:${(s.current/10)*100}%;background:${color};border-radius:10px;transition:width .3s"></div>
+      <div>
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:var(--grey-d);margin-bottom:3px">Benchmark / Notes</div>
+        <input type="text" value="${s.benchmark||''}" placeholder="e.g. Industry avg 6, Q1 was 5…"
+          style="width:100%;padding:5px 7px;border:1px solid var(--bdr);border-radius:var(--r);font-size:12px;color:var(--black);outline:none;box-sizing:border-box"
+          onblur="WHEEL_DATA['${key}'].segments[${i}].benchmark=this.value;markUnsaved()">
+      </div>
+      <div style="margin-top:6px;height:4px;background:var(--bdr);border-radius:10px;overflow:hidden">
+        <div style="position:relative;height:100%">
+          <div style="position:absolute;left:0;top:0;height:100%;width:${((s.ideal||0)/10)*100}%;background:rgba(0,108,170,.15);border-radius:10px"></div>
+          <div style="position:absolute;left:0;top:0;height:100%;width:${((s.current||0)/10)*100}%;background:${color};border-radius:10px;transition:width .3s"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;margin-top:2px;font-size:9px;color:var(--grey-d)">
-          <span>${s.current}/10 current</span>
-          <span style="color:var(--blue)">${s.ideal}/10 ideal</span>
-        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:2px;font-size:10px;color:var(--grey-d)">
+        <span style="color:${color}">${s.current||0}/10 current</span>
+        <span style="color:var(--blue)">${s.ideal||0}/10 ideal</span>
       </div>
     </div>`;
   }).join('');
@@ -2193,6 +2123,31 @@ function renderWheelLegend(key) {
           <span style="color:var(--grey-d)">${s.name}</span>
         </div>`).join('')}
     </div>`;
+}
+
+function addWheel(){
+  const name=prompt('Wheel name:');
+  if(!name||!name.trim())return;
+  const key='w_'+Date.now();
+  const inp=prompt('Segment names (comma separated):','Marketing,Sales,Delivery,Finance,Teams,Learning')||'';
+  const segs=inp.split(',').filter(Boolean).map(s=>({name:s.trim(),current:5,ideal:7,benchmark:'',priority:0}));
+  WHEEL_DATA[key]={label:name.trim(),segments:segs};
+  const sel=document.getElementById('wheel-period');
+  const opt=document.createElement('option');
+  opt.value=key;opt.textContent=name.trim();
+  sel.appendChild(opt);sel.value=key;
+  renderWheels();markUnsaved();saveAll();
+}
+function removeWheel(){
+  const key=document.getElementById('wheel-period')?.value;
+  if(!key)return;
+  if(!confirm('Remove "'+(WHEEL_DATA[key]?.label||key)+'"?'))return;
+  delete WHEEL_DATA[key];
+  const sel=document.getElementById('wheel-period');
+  const opt=sel.querySelector('option[value="'+key+'"]');
+  if(opt)opt.remove();
+  sel.value=sel.options[0]?.value||Object.keys(WHEEL_DATA)[0];
+  renderWheels();markUnsaved();saveAll();
 }
 
 function renderWheels() {
