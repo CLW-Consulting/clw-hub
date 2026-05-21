@@ -633,10 +633,10 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
         </div>
         <div class="fgr" id="link-proj-grp" style="display:none">
           <label class="fl">Link to existing live project (optional)</label>
-          <select class="fs" id="f-link-proj">
-            <option value="">— New project / standalone —</option>
+          <select class="fs" id="f-link-proj" onchange="onLinkProjChange(this.value)">
+            <option value="">— New standalone prospect —</option>
           </select>
-          <div style="font-size:10px;color:var(--grey-d);margin-top:3px">If linked, the "To Be Agreed" fee will appear on that project in Forecast</div>
+          <div style="font-size:10px;color:var(--grey-d);margin-top:3px">Select to add a TBA fee to an existing project — form will pre-fill from it</div>
         </div>
         <div class="fgr">
           <label class="fl">Billing Type</label>
@@ -1419,19 +1419,60 @@ function openAdd(prospective){
   editId=null; isProspect=prospective;
   document.getElementById('modal-ttl').textContent=prospective?'Add Prospect':'Add Project';
   document.getElementById('stage-grp').style.display=prospective?'block':'none';
-  document.getElementById('link-proj-grp').style.display=prospective?'block':'none';
-  // Populate live projects dropdown
-  const lp=document.getElementById('f-link-proj');
-  if(lp){
-    lp.innerHTML='<option value="">— New project / standalone —</option>'+
-      projects.filter(p=>!p.prospective&&(p.status||'live')==='live').map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-  }
   document.getElementById('fee-sec').style.display=prospective?'none':'block';
   ['f-name','f-client','f-pm','f-agreed','f-toagree','f-pop','f-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('f-mgr').value='';
   const fb=document.getElementById('f-billing'); if(fb)fb.value='';
+  // Show/populate link dropdown for pipeline
+  const lpGrp=document.getElementById('link-proj-grp');
+  if(lpGrp){
+    lpGrp.style.display=prospective?'block':'none';
+    const lp=document.getElementById('f-link-proj');
+    if(lp){
+      lp.innerHTML='<option value="">— New standalone prospect —</option>'+
+        projects.filter(p=>!p.prospective&&(p.status||'live')==='live')
+          .map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+      lp.value='';
+    }
+  }
   buildFeeGrid({});
   document.getElementById('proj-modal').classList.add('open');
+}
+
+// When user selects a linked project — pre-fill form from it, switch to edit-TBA mode
+function onLinkProjChange(projId){
+  if(!projId){
+    // Reset to blank new prospect
+    ['f-name','f-client','f-pm','f-agreed','f-toagree','f-pop','f-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+    document.getElementById('f-mgr').value='';
+    document.getElementById('modal-ttl').textContent='Add Prospect';
+    document.getElementById('fee-sec').style.display='none';
+    editId=null; isProspect=true;
+    buildFeeGrid({});
+    return;
+  }
+  const p=projects.find(x=>x.id===projId);
+  if(!p)return;
+  // Pre-fill everything from the existing project
+  document.getElementById('f-name').value=p.name||'';
+  document.getElementById('f-mgr').value=p.manager||'';
+  document.getElementById('f-client').value=p.client||'';
+  document.getElementById('f-pm').value=p.pm||'';
+  document.getElementById('f-agreed').value=p.agreed||'';
+  document.getElementById('f-toagree').value=p.toAgree||'';
+  document.getElementById('f-pop').value=p.pop||'';
+  document.getElementById('f-notes').value=p.notes||'';
+  const fb=document.getElementById('f-billing'); if(fb)fb.value=p.hourlyRate?'hr':'';
+  // Switch modal to "add TBA to existing" mode
+  editId=p.id;
+  isProspect=false;
+  document.getElementById('modal-ttl').textContent='Add TBA Fee to: '+p.name;
+  document.getElementById('fee-sec').style.display='block';
+  buildFeeGrid(p.fees||{});
+  updateModalSummary();
+  // Change the help text
+  const note=document.querySelector('#link-proj-grp div[style*="font-size:10px"]');
+  if(note)note.textContent='Editing "To Be Agreed" on existing project. All other changes will also update this project.';
 }
 function openEdit(id){
   const p=projects.find(x=>x.id===id); if(!p)return;
@@ -1555,49 +1596,13 @@ function saveProject(){
     projects.push(patch);
     showToast('✓ Added','ok');
   }
-  // If linked to existing project, add toAgree to that project
-  const linkId=document.getElementById('f-link-proj')?.value;
-  if(linkId&&isProspect&&patch.toAgree>0){
-    const lp=projects.find(x=>x.id===linkId);
-    if(lp){lp.toAgree=(+lp.toAgree||0)+patch.toAgree;lp.linkedPipelineId=patch.id||editId;}
-  }
   closeModal('proj-modal');
   renderTable();
   renderDashboard();
   saveAll();
 }
 function delProj(id){if(!confirm('Delete?'))return;const _dp=projects.find(p=>p.id===id);pushUndo('Delete — '+(_dp?_dp.name.split(' ')[0]:''));projects=projects.filter(p=>p.id!==id);renderTable();renderDashboard();showToast('Deleted','ok');saveAll();}
-function promote(id){
-  const p=projects.find(x=>x.id===id);if(!p)return;
-  const fee=(+p.agreed||0)+(+p.toAgree||0);
-  if(!confirm('Promote "'+p.name+'" to active?'+(fee>0?' — '+fmtGBP(fee)+' will be added to Work Won':'')))return;
-  pushUndo('Promote');
-  p.prospective=false;p.stage=undefined;
-  // Add to work won in current quarter
-  if(fee>0){
-    const now=new Date();
-    const qNum=Math.ceil((now.getMonth()+1)/3);
-    const qtr='Q'+qNum+'-'+now.getFullYear();
-    if(!scorecard[qtr])scorecard[qtr]={};
-    if(!scorecard[qtr].Ben)scorecard[qtr].Ben={workWon:new Array(13).fill(0),workWonProjects:new Array(13).fill(''),target:195000};
-    if(!scorecard[qtr].Ben.workWon)scorecard[qtr].Ben.workWon=new Array(13).fill(0);
-    if(!scorecard[qtr].Ben.workWonProjects)scorecard[qtr].Ben.workWonProjects=new Array(13).fill('');
-    // Find current week index in quarter
-    const weeks=qtrWeeks[qtr]||[];
-    const todayStr=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'}).replace(' ','-');
-    let wIdx=weeks.findIndex(w=>w===todayStr);
-    if(wIdx<0)wIdx=Math.min(weeks.length-1,Math.floor((new Date().getDate()-1)/7));
-    if(wIdx<0)wIdx=0;
-    scorecard[qtr].Ben.workWon[wIdx]=(scorecard[qtr].Ben.workWon[wIdx]||0)+fee;
-    scorecard[qtr].Ben.workWonProjects[wIdx]=((scorecard[qtr].Ben.workWonProjects[wIdx]||'')?scorecard[qtr].Ben.workWonProjects[wIdx]+', ':'')+p.name;
-    showToast('✓ Promoted + '+fmtGBP(fee)+' added to Work Won','ok');
-  } else {
-    showToast('✓ Promoted','ok');
-  }
-  renderTable();renderPipeline();
-  if(document.getElementById('page-scorecard').classList.contains('active'))renderScorecard();
-  saveAll();
-}
+function promote(id){const p=projects.find(x=>x.id===id);if(!p)return;if(!confirm('Promote "'+p.name+'" to active?'))return;pushUndo('Promote');p.prospective=false;p.stage=undefined;renderTable();renderPipeline();showToast('✓ Promoted','ok');saveAll();}
 
 // ═══════════════════════════════════════════════════════════
 // PIPELINE PAGE
@@ -1674,24 +1679,11 @@ function syncManagerDropdowns(){
   const extras=teamPeople.filter(p=>!['Adam','Ben','Johnny','Andrea'].includes(p));
   ['f-mgr','fc-mgr'].forEach(id=>{const sel=document.getElementById(id);if(!sel)return;extras.forEach(p=>{if(!sel.querySelector(`option[value="${p}"]`)){const o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o)}})});
 }
-function promptWonProject(qtr,idx){
-  const qd=scorecard[qtr];if(!qd||!qd.Ben)return;
-  if(!qd.Ben.workWonProjects)qd.Ben.workWonProjects=new Array(13).fill('');
-  const cur=qd.Ben.workWonProjects[idx]||'';
-  const name=prompt('Project name for this week win:',cur);
-  if(name===null)return;
-  qd.Ben.workWonProjects[idx]=name.trim();
-  markUnsaved();saveAll();renderScorecard();
-}
 function populateQtrSelect(){
   const sel=document.getElementById('sc-qtr');if(!sel)return;
   const qtrs=Object.keys(scorecard).sort();
   sel.innerHTML=qtrs.map(q=>`<option value="${q}">${q.replace('-',' ')}</option>`).join('');
-  // Default to current quarter
-  const now=new Date();
-  const qNum=Math.ceil((now.getMonth()+1)/3);
-  const currentQtr='Q'+qNum+'-'+now.getFullYear();
-  sel.value=qtrs.includes(currentQtr)?currentQtr:qtrs[qtrs.length-1];
+  if(qtrs.length)sel.value=qtrs[qtrs.length-1];
 }
 function renderScorecard(){
   const qtr=document.getElementById('sc-qtr').value;
@@ -1700,17 +1692,7 @@ function renderScorecard(){
   const qd=scorecard[qtr];
   const ben=qd.Ben||{workWon:new Array(13).fill(0),target:195000};
   const bT=ben.workWon.reduce((s,v)=>s+(+v||0),0),bTgt=ben.target||195000,bPct=Math.min((bT/bTgt)*100,100);
-  document.getElementById('ben-won').innerHTML=`<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-size:22px;font-weight:700;color:var(--blue);letter-spacing:-.02em">${fmtGBP(bT)}</div><div style="font-size:10px;color:var(--grey-d);font-weight:600;text-transform:uppercase;letter-spacing:.05em">of ${fmtGBP(bTgt)} target</div></div><div style="flex:1;min-width:180px"><div class="pbg" style="height:6px"><div class="pf" style="width:${bPct}%;background:${barClr(bT)}"></div></div><div style="display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--grey-d);font-weight:500"><span>${bPct.toFixed(0)}% achieved</span><span>${fmtGBP(Math.max(bTgt-bT,0))} remaining</span></div></div></div><div style="font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--grey-d);margin-bottom:5px">Weekly Work Won (£) — click label to add project name</div>
-  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
-    ${weeks.slice(0,13).map((w,i)=>{
-      const proj=ben.workWonProjects&&ben.workWonProjects[i]?ben.workWonProjects[i]:'';
-      return`<div class="wc">
-        <div class="wl" style="cursor:pointer;color:var(--blue)" onclick="promptWonProject('${qtr}',${i})" title="Click to set project name">${w}</div>
-        ${proj?`<div style="font-size:8px;color:var(--blue);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%" title="${proj}">📋 ${proj}</div>`:''}
-        <input class="wi" type="number" value="${ben.workWon[i]||0}" oninput="if(!scorecard['${qtr}'].Ben.workWon)scorecard['${qtr}'].Ben.workWon=new Array(13).fill(0);scorecard['${qtr}'].Ben.workWon[${i}]=+this.value||0;markUnsaved();saveAll()">
-      </div>`;
-    }).join('')}
-  </div>`;
+  document.getElementById('ben-won').innerHTML=`<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-size:22px;font-weight:700;color:var(--blue);letter-spacing:-.02em">${fmtGBP(bT)}</div><div style="font-size:10px;color:var(--grey-d);font-weight:600;text-transform:uppercase;letter-spacing:.05em">of ${fmtGBP(bTgt)} target</div></div><div style="flex:1;min-width:180px"><div class="pbg" style="height:6px"><div class="pf" style="width:${bPct}%;background:${barClr(bT)}"></div></div><div style="display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--grey-d);font-weight:500"><span>${bPct.toFixed(0)}% achieved</span><span>${fmtGBP(Math.max(bTgt-bT,0))} remaining</span></div></div></div><div style="font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--grey-d);margin-bottom:5px">Weekly Work Won (£)</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">${weeks.slice(0,13).map((w,i)=>`<div class="wc"><div class="wl">${w}</div><input class="wi" type="number" value="${ben.workWon[i]||0}" oninput="qd.Ben.workWon[${i}]=+this.value||0;markUnsaved()"></div>`).join('')}</div>`;
   const people=teamPeople.filter(p=>p!=='Ben');
   document.getElementById('sc-grid').innerHTML=people.map(name=>{
     const color=teamColors[name]||'#6b7580';
