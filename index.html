@@ -670,7 +670,18 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
     <div class="mb">
       <input type="hidden" id="l10-edit-idx">
       <div class="fg">
-        <div class="fgr ff"><label class="fl">Project Name</label><input class="fi" id="lf-name" placeholder="e.g. 33-35 Piccadilly"></div>
+        <div class="fgr ff">
+          <label class="fl">Project Name</label>
+          <select class="fi" id="lf-proj-select" onchange="onL10ProjSelect(this.value)" style="margin-bottom:5px">
+            <option value="">— Select live project —</option>
+          </select>
+          <input class="fi" id="lf-name" placeholder="Or type manually…">
+        </div>
+        <div class="fgr" id="lf-link-grp" style="display:none">
+          <div style="font-size:10px;color:var(--blue);padding:5px 8px;background:var(--blue-pp);border-radius:var(--r)">
+            ✓ Linked to live project — billing will show automatically in L10
+          </div>
+        </div>
         <div class="fgr"><label class="fl">Feedback Status</label>
           <select class="fi" id="lf-fb">
             <option value="nr">Not Requested</option><option value="pd">Pending</option>
@@ -1006,9 +1017,14 @@ function rL10Metrics(){
 }
 
 // Get this month's billing for a project name
-function getProjectBilling(name){
+function getProjectBilling(name,linkedProjId){
   const ym=curYM();
-  const p=projects.filter(x=>!x.prospective).find(x=>x.name.toLowerCase().includes(name.toLowerCase().split(' ')[0].toLowerCase()));
+  if(linkedProjId){
+    const lp=projects.find(x=>x.id===linkedProjId);
+    if(lp&&lp.fees&&lp.fees[ym])return +lp.fees[ym];
+  }
+  const p=projects.filter(x=>!x.prospective&&(x.status||'live')!=='complete')
+    .find(x=>x.name.toLowerCase().includes(name.toLowerCase().split(' ').filter(w=>w.length>2)[0]||name.toLowerCase().slice(0,5)));
   return p&&p.fees&&p.fees[ym]?+p.fees[ym]:null;
 }
 
@@ -1022,7 +1038,7 @@ function rL10Jobs(){
   (prevData.liveJobs||[]).forEach(j=>{prevJobMap[j.name]=j;});
 
   document.getElementById('l10-tbody').innerHTML=js.map((j,i)=>{
-    const billing=getProjectBilling(j.name);
+    const billing=getProjectBilling(j.name,j.linkedProjId);
     const prevJob=prevJobMap[j.name];
     const prevTexts=new Set((prevJob?.ac||[]).map(a=>a.t));
 
@@ -1124,6 +1140,22 @@ function editL10Proj(i){
   document.getElementById('lf-ac').value=(j.ac||[]).map(a=>a.t).join('\n');
   const ntEl=document.getElementById('lf-nt');if(ntEl)ntEl.value=j.nt||'';
   document.getElementById('lf-type').value='live';
+  // Populate live project dropdown and pre-select if already linked
+  const sel=document.getElementById('lf-proj-select');
+  if(sel){
+    const live=projects.filter(p=>!p.prospective&&(p.status||'live')==='live');
+    sel.innerHTML='<option value="">— Link to live project (optional) —</option>'+
+      live.map(p=>`<option value="${p.id}">${p.name}${p.manager?' ('+p.manager+')':''}</option>`).join('');
+    // Pre-select if already linked
+    const existing=live.find(p=>p.name===j.name||p.id===j.linkedProjId);
+    sel.value=existing?existing.id:'';
+    if(existing){
+      let hf=document.getElementById('lf-linked-proj-id');
+      if(!hf){hf=document.createElement('input');hf.type='hidden';hf.id='lf-linked-proj-id';document.getElementById('l10-proj-modal').appendChild(hf);}
+      hf.value=existing.id;
+      const lg=document.getElementById('lf-link-grp');if(lg)lg.style.display='block';
+    }
+  }
   document.getElementById('l10-proj-modal').classList.add('open');
 }
 function openAddL10Project(){
@@ -1132,7 +1164,34 @@ function openAddL10Project(){
   ['lf-name','lf-own','lf-bw','lf-ac','lf-nt'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('lf-fb').value='nr';
   document.getElementById('lf-type').value='live';
+  // Populate live project dropdown
+  const sel=document.getElementById('lf-proj-select');
+  if(sel){
+    const live=projects.filter(p=>!p.prospective&&(p.status||'live')==='live');
+    sel.innerHTML='<option value="">— Select live project —</option>'+
+      live.map(p=>`<option value="${p.id}">${p.name}${p.manager?' ('+p.manager+')':''}</option>`).join('');
+    sel.value='';
+  }
+  const lg=document.getElementById('lf-link-grp');if(lg)lg.style.display='none';
   document.getElementById('l10-proj-modal').classList.add('open');
+}
+function onL10ProjSelect(projId){
+  if(!projId){
+    document.getElementById('lf-name').value='';
+    const lg=document.getElementById('lf-link-grp');if(lg)lg.style.display='none';
+    return;
+  }
+  const p=projects.find(x=>x.id===projId);if(!p)return;
+  // Pre-fill from live project
+  document.getElementById('lf-name').value=p.name;
+  if(!document.getElementById('lf-own').value)
+    document.getElementById('lf-own').value=p.manager||'';
+  // Show linked indicator
+  const lg=document.getElementById('lf-link-grp');if(lg)lg.style.display='block';
+  // Store link
+  let hf=document.getElementById('lf-linked-proj-id');
+  if(!hf){hf=document.createElement('input');hf.type='hidden';hf.id='lf-linked-proj-id';document.getElementById('l10-proj-modal').appendChild(hf);}
+  hf.value=projId;
 }
 function saveL10Project(){
   const is=document.getElementById('l10-edit-idx').value;
@@ -1140,7 +1199,8 @@ function saveL10Project(){
   if(!name){alert('Name required');return;}
   const bwEl=document.getElementById('lf-bw');
   const ntEl=document.getElementById('lf-nt');
-  const p={id:Date.now(),name,fb:document.getElementById('lf-fb').value,own:document.getElementById('lf-own').value.trim(),bw:bwEl?bwEl.value.trim():'',ac:document.getElementById('lf-ac').value.split('\n').filter(Boolean).map(t=>({t:t.trim(),d:false,owner:''})),nt:ntEl?ntEl.value.trim():''};
+  const linkedProjId=document.getElementById('lf-linked-proj-id')?.value||'';
+  const p={id:Date.now(),name,linkedProjId,fb:document.getElementById('lf-fb').value,own:document.getElementById('lf-own').value.trim(),bw:bwEl?bwEl.value.trim():'',ac:document.getElementById('lf-ac').value.split('\n').filter(Boolean).map(t=>({t:t.trim(),d:false,owner:''})),nt:ntEl?ntEl.value.trim():''};
   const tp=document.getElementById('lf-type').value;
   if(is!=='')L10D.liveJobs[parseInt(is)]={...L10D.liveJobs[parseInt(is)],...p};
   else if(tp==='pipeline'){L10D.pipeline=L10D.pipeline||[];L10D.pipeline.push({id:p.id,name:p.name,notes:p.nt});}
@@ -1169,7 +1229,7 @@ function buildL10Report(){
 
   // Build project rows
   const rows=(L10D.liveJobs||[]).map((j,idx)=>{
-    const billing=getProjectBilling(j.name);
+    const billing=getProjectBilling(j.name,j.linkedProjId);
     const fbColor=fbColors[j.fb]||'#888';
     const fbLabel=fbLabels[j.fb]||'—';
     const acDone=(j.ac||[]).filter(a=>a.d).length;
