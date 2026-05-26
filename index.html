@@ -533,6 +533,28 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
             </table>
           </div>
         </div>
+        <div class="card" style="margin-top:14px">
+          <div class="ch" onclick="toggleNotWon()" style="cursor:pointer">
+            <div class="ct" style="color:var(--grey-d)">✕ Not Won <span class="badge" id="not-won-badge" style="background:var(--grey-m)"></span></div>
+            <div style="font-size:10px;color:var(--grey-m)" id="not-won-toggle-label">click to show</div>
+          </div>
+          <div id="not-won-section" style="display:none">
+            <div style="overflow-x:auto">
+              <table class="fc-table" style="min-width:600px">
+                <thead><tr>
+                  <th class="col-name">Project</th>
+                  <th class="col-mgr">Manager</th>
+                  <th>Client</th>
+                  <th style="text-align:right">Est. Fee</th>
+                  <th>Date</th>
+                  <th>Reason</th>
+                  <th></th>
+                </tr></thead>
+                <tbody id="not-won-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1769,14 +1791,74 @@ function saveProject(){
   renderDashboard();
   saveAll();
 }
-function delProj(id){if(!confirm('Delete?'))return;const _dp=projects.find(p=>p.id===id);pushUndo('Delete — '+(_dp?_dp.name.split(' ')[0]:''));projects=projects.filter(p=>p.id!==id);renderTable();renderDashboard();showToast('Deleted','ok');saveAll();}
+function delProj(id){
+  const _dp=projects.find(p=>p.id===id);if(!_dp)return;
+  if(_dp.prospective){
+    // Pipeline project — offer Not Won archive
+    const choice=confirm('"'+_dp.name+'"\n\nClick OK to mark as NOT WON (kept in history)\nClick Cancel to permanently delete');
+    if(choice===null)return; // dismissed
+    pushUndo('Delete — '+_dp.name.split(' ')[0]);
+    if(choice){
+      // Mark as not won — archive it
+      _dp.notWon=true;
+      _dp.notWonDate=new Date().toLocaleDateString('en-GB');
+      const reason=prompt('Reason for not winning (optional):','');
+      _dp.notWonReason=reason||'';
+    } else {
+      projects=projects.filter(p=>p.id!==id);
+    }
+  } else {
+    if(!confirm('Delete "'+_dp.name+'"?'))return;
+    pushUndo('Delete — '+_dp.name.split(' ')[0]);
+    projects=projects.filter(p=>p.id!==id);
+  }
+  renderTable();renderPipeline();renderDashboard();showToast('Done','ok');saveAll();
+}
 function promote(id){const p=projects.find(x=>x.id===id);if(!p)return;if(!confirm('Promote "'+p.name+'" to active?'))return;pushUndo('Promote');p.prospective=false;p.stage=undefined;renderTable();renderPipeline();showToast('✓ Promoted','ok');saveAll();}
 
 // ═══════════════════════════════════════════════════════════
 // PIPELINE PAGE
 // ═══════════════════════════════════════════════════════════
+let _showNotWon=false;
+function toggleNotWon(){
+  _showNotWon=!_showNotWon;
+  document.getElementById('not-won-section').style.display=_showNotWon?'block':'none';
+  document.getElementById('not-won-toggle-label').textContent=_showNotWon?'click to hide':'click to show';
+  if(_showNotWon)renderNotWon();
+}
+function renderNotWon(){
+  const list=projects.filter(p=>p.prospective&&p.notWon);
+  document.getElementById('not-won-badge').textContent=list.length;
+  const tb=document.getElementById('not-won-tbody');if(!tb)return;
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--grey-m);font-size:11px">No not-won projects yet</td></tr>';return;}
+  tb.innerHTML=list.sort((a,b)=>(b.notWonDate||'').localeCompare(a.notWonDate||'')).map(p=>`
+    <tr style="opacity:.7">
+      <td class="col-name" style="font-size:12px;font-weight:600">${esc(p.name)}</td>
+      <td class="col-mgr"><div class="mp"><div class="md" style="background:${mgrC(p.manager)}"></div>${esc(p.manager||'—')}</div></td>
+      <td style="font-size:12px">${esc(p.client||'—')}</td>
+      <td style="text-align:right;font-family:'Courier New',monospace;color:var(--grey-m)">${fmtGBP((+p.agreed||0)+(+p.toAgree||0))}</td>
+      <td style="font-size:11px;color:var(--grey-d)">${p.notWonDate||'—'}</td>
+      <td style="font-size:11px;color:var(--grey-d);max-width:150px">${esc(p.notWonReason||'—')}</td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-s btn-xs" onclick="reinstateProject('${p.id}')" title="Move back to pipeline">↩ Reinstate</button>
+        <button class="btn btn-d btn-xs" onclick="hardDeleteProj('${p.id}')" title="Permanently delete">✕</button>
+      </div></td>
+    </tr>`).join('');
+}
+function reinstateProject(id){
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  p.notWon=false;p.notWonDate='';p.notWonReason='';
+  renderPipeline();saveAll();showToast('↩ Reinstated to pipeline','ok');
+}
+function hardDeleteProj(id){
+  if(!confirm('Permanently delete? This cannot be undone.'))return;
+  projects=projects.filter(p=>p.id!==id);
+  renderPipeline();saveAll();showToast('Deleted','ok');
+}
 function renderPipeline(){
-  const list=projects.filter(p=>p.prospective);
+  const list=projects.filter(p=>p.prospective&&!p.notWon);
+  const notWonCount=projects.filter(p=>p.prospective&&p.notWon).length;
+  const nwb=document.getElementById('not-won-badge');if(nwb)nwb.textContent=notWonCount||'';
   const tv=list.reduce((s,p)=>s+(+p.agreed||0)+(+p.toAgree||0),0);
   // Average age of proposals sent
   const sent=list.filter(p=>p.pipeProposalDate);
