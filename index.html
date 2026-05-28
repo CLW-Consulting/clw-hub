@@ -367,6 +367,7 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
     </nav>
     <nav class="nsec">
       <div class="nlbl">Projects</div>
+      <div class="ni" onclick="nav('projdb')"><span class="nic">📋</span> Project Database</div>
       <div class="ni" onclick="nav('projects')"><span class="nic">▦</span> Projects &amp; Forecast</div>
       <div class="ni" onclick="nav('pipeline')"><span class="nic">◎</span> Pipeline</div>
     </nav>
@@ -622,6 +623,58 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
       </div>
     </div>
 
+
+    <!-- ══ PROJECT DATABASE ══ -->
+    <div class="pg" id="page-projdb">
+      <div class="ph">
+        <div><div class="pt">Project Database</div><div class="ps">Invoice contacts, project codes &amp; protocols — connected to Forecast</div></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-s btn-sm" onclick="exportProjDB('selected')">↓ Export Selected</button>
+          <button class="btn btn-s btn-sm" onclick="exportProjDB('all')">↓ Export All</button>
+          <button class="btn btn-p btn-sm" onclick="saveAll()">↓ Save</button>
+        </div>
+      </div>
+      <div class="page-scroll" style="padding:18px 22px">
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+          <input class="fsrch" type="text" placeholder="Search projects…" id="pdb-search" oninput="renderProjDB()">
+          <select class="fsel" id="pdb-mgr" onchange="renderProjDB()">
+            <option value="">All managers</option>
+            <option>Adam</option><option>Ben</option><option>Johnny</option><option>Andrea</option>
+          </select>
+          <select class="fsel" id="pdb-status" onchange="renderProjDB()">
+            <option value="">All statuses</option>
+            <option value="live">Live</option>
+            <option value="complete">Complete</option>
+            <option value="hold">On Hold</option>
+          </select>
+          <label style="font-size:11px;color:var(--grey-d);display:flex;align-items:center;gap:4px;cursor:pointer">
+            <input type="checkbox" id="pdb-sel-all" onchange="toggleSelectAllProjDB(this.checked)"> Select all
+          </label>
+        </div>
+        <div id="pdb-table-wrap" style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:var(--blue);color:white">
+                <th style="padding:8px 10px;text-align:left;width:32px"></th>
+                <th style="padding:8px 10px;text-align:left;min-width:160px">Project</th>
+                <th style="padding:8px 10px;text-align:left;min-width:80px">Manager</th>
+                <th style="padding:8px 10px;text-align:left;min-width:100px">Client</th>
+                <th style="padding:8px 10px;text-align:left;min-width:100px">Project Code</th>
+                <th style="padding:8px 10px;text-align:right;min-width:90px">Agreed Fee</th>
+                <th style="padding:8px 10px;text-align:right;min-width:80px">Left to Invoice</th>
+                <th style="padding:8px 10px;text-align:left;min-width:160px">Invoice Contact(s)</th>
+                <th style="padding:8px 10px;text-align:left;min-width:140px">Instructions</th>
+                <th style="padding:8px 10px;text-align:left;min-width:100px">Timeline</th>
+                <th style="padding:8px 10px;text-align:left;min-width:90px">PO Number</th>
+                <th style="padding:8px 10px;text-align:left;min-width:120px">Notes</th>
+                <th style="padding:8px 10px;width:50px"></th>
+              </tr>
+            </thead>
+            <tbody id="pdb-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -874,7 +927,7 @@ function nav(id){
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   document.querySelectorAll('.ni').forEach(n=>{if(n.getAttribute('onclick')?.includes("'"+id+"'"))n.classList.add('active');});
-  ({dashboard:renderDashboard,l10:openL10Tab,projects:renderTable,pipeline:renderPipeline,scorecard:renderScorecard,wheels:renderWheels})[id]?.();
+  ({dashboard:renderDashboard,l10:openL10Tab,projects:renderTable,pipeline:renderPipeline,scorecard:renderScorecard,wheels:renderWheels,projdb:renderProjDB})[id]?.();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1975,6 +2028,206 @@ document.querySelectorAll('.mo').forEach(o=>o.addEventListener('click',e=>{if(e.
 function showToast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),2500)}
 window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.returnValue=''}});
 
+
+// ═══════════════════════════════════════════════════════════
+// PROJECT DATABASE
+// ═══════════════════════════════════════════════════════════
+// projDB stores extra fields per project id: {code, invoiceContact, invoiceEmail, invoiceProtocol, dbNotes}
+let projDB = {};
+
+function getProjDB(id){return projDB[id]||{code:'',invoiceContact:'',invoiceEmail:'',invoiceProtocol:'',dbNotes:''};}
+
+function renderProjDB(){
+  const search=(document.getElementById('pdb-search')?.value||'').toLowerCase();
+  const mgr=document.getElementById('pdb-mgr')?.value||'';
+  const status=document.getElementById('pdb-status')?.value||'';
+  let list=projects.filter(p=>!p.prospective);
+  if(search)list=list.filter(p=>p.name.toLowerCase().includes(search)||(p.client||'').toLowerCase().includes(search));
+  if(mgr)list=list.filter(p=>p.manager&&p.manager.includes(mgr));
+  if(status)list=list.filter(p=>(p.status||'live')===status);
+
+  const tb=document.getElementById('pdb-tbody');if(!tb)return;
+  tb.innerHTML=list.map((p,i)=>{
+    const db=getProjDB(p.id);
+    const agreed=(+p.agreed||0)+(+p.toAgree||0);
+    const left=calcLeftToInvoice?calcLeftToInvoice(p):null;
+    const leftColor=left===null?'var(--grey-m)':left<=0?'var(--green)':left<5000?'var(--amber)':'var(--blue)';
+    const rowBg=i%2===0?'white':'var(--off)';
+    return`<tr style="background:${rowBg};border-bottom:1px solid var(--bdr)">
+      <td style="padding:6px 10px;text-align:center">
+        <input type="checkbox" class="pdb-sel" data-id="${p.id}" style="accent-color:var(--blue)">
+      </td>
+      <td style="padding:6px 10px;font-weight:600">
+        <div>${esc(p.name)}</div>
+        <div style="font-size:10px;color:var(--grey-d)">${esc(p.pop||'')}</div>
+      </td>
+      <td style="padding:6px 10px">
+        <div class="mp"><div class="md" style="background:${mgrC(p.manager)};width:8px;height:8px;border-radius:50%;flex-shrink:0"></div>${esc(p.manager||'—')}</div>
+      </td>
+      <td style="padding:6px 10px">${esc(p.client||'—')}</td>
+      <td style="padding:6px 10px">
+        <input type="text" value="${esc(db.code||'')}" placeholder="e.g. CLW-2026-001"
+          style="width:100%;border:none;border-bottom:1px dashed var(--bdr);background:transparent;font-size:12px;outline:none;padding:2px 0"
+          onblur="saveProjDB('${p.id}','code',this.value)">
+      </td>
+      <td style="padding:6px 10px;text-align:right;font-family:'Courier New',monospace;color:var(--blue)">${agreed>0?fmtGBP(agreed):'—'}</td>
+      <td style="padding:6px 10px;text-align:right;font-family:'Courier New',monospace;font-weight:700;color:${leftColor}">${left===null?'—':left<=0?'✓ Done':fmtGBP(left)}</td>
+      <td style="padding:6px 10px;min-width:160px">
+        <input type="text" value="${esc(db.invoiceContact||'')}" placeholder="Name + email(s)…"
+          style="width:100%;border:none;border-bottom:1px dashed var(--bdr);background:transparent;font-size:11px;outline:none;padding:2px 0"
+          onblur="saveProjDB('${p.id}','invoiceContact',this.value)"
+          title="Enter contact name and email addresses to send invoices to">
+        <div style="font-size:9px;color:var(--grey-m);margin-top:1px">name &amp; email(s)</div>
+      </td>
+      <td style="padding:6px 10px;min-width:140px">
+        <input type="text" value="${esc(db.invoiceInstructions||'')}" placeholder="e.g. Address to Finance Dept…"
+          style="width:100%;border:none;border-bottom:1px dashed var(--bdr);background:transparent;font-size:11px;outline:none;padding:2px 0"
+          onblur="saveProjDB('${p.id}','invoiceInstructions',this.value)"
+          title="Special instructions: who to address to, portal URL, postal address etc.">
+        <div style="font-size:9px;color:var(--grey-m);margin-top:1px">address / portal / special req.</div>
+      </td>
+      <td style="padding:6px 10px;min-width:100px">
+        <input type="text" value="${esc(db.invoiceTimeline||'')}" placeholder="e.g. By 25th…"
+          style="width:100%;border:none;border-bottom:1px dashed var(--bdr);background:transparent;font-size:11px;outline:none;padding:2px 0"
+          onblur="saveProjDB('${p.id}','invoiceTimeline',this.value)"
+          title="Invoice deadline or timing requirement">
+        <div style="font-size:9px;color:var(--grey-m);margin-top:1px">deadline / timing</div>
+      </td>
+      <td style="padding:6px 10px;min-width:90px">
+        <input type="text" value="${esc(db.poNumber||'')}" placeholder="PO-XXXX"
+          style="width:100%;border:none;border-bottom:1px dashed var(--bdr);background:transparent;font-size:11px;outline:none;padding:2px 0"
+          onblur="saveProjDB('${p.id}','poNumber',this.value)"
+          title="Purchase Order number required on invoice">
+        <div style="font-size:9px;color:var(--grey-m);margin-top:1px">PO number</div>
+      </td>
+      <td style="padding:6px 10px">
+        <input type="text" value="${esc(db.dbNotes||'')}" placeholder="Notes…"
+          style="width:100%;border:none;border-bottom:1px dashed var(--bdr);background:transparent;font-size:11px;outline:none;padding:2px 0"
+          onblur="saveProjDB('${p.id}','dbNotes',this.value)">
+      </td>
+      <td style="padding:6px 10px">
+        <button onclick="nav('projects');setTimeout(()=>openEdit('${p.id}'),200)" 
+          style="font-size:10px;background:none;border:none;cursor:pointer;color:var(--blue)" title="Open in Forecast">→</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function saveProjDB(id,field,value){
+  if(!projDB[id])projDB[id]={code:'',invoiceContact:'',invoiceEmail:'',invoiceProtocol:'',dbNotes:''};
+  projDB[id][field]=value;
+  markUnsaved();
+  saveAll();
+}
+
+function toggleSelectAllProjDB(checked){
+  document.querySelectorAll('.pdb-sel').forEach(cb=>cb.checked=checked);
+}
+
+function exportProjDB(mode){
+  const list=projects.filter(p=>!p.prospective);
+  let rows;
+  if(mode==='selected'){
+    const selected=new Set([...document.querySelectorAll('.pdb-sel:checked')].map(cb=>cb.dataset.id));
+    if(!selected.size){showToast('Select at least one project','err');return;}
+    rows=list.filter(p=>selected.has(p.id));
+  } else {
+    rows=list;
+  }
+  if(!rows.length){showToast('No projects to export','err');return;}
+  const dateStr=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const tableRows=rows.map((p,i)=>{
+    const db=getProjDB(p.id);
+    const agreed=(+p.agreed||0)+(+p.toAgree||0);
+    const left=calcLeftToInvoice?calcLeftToInvoice(p):null;
+    const leftStr=left===null?'—':left<=0?'✓ Done':'£'+left.toLocaleString();
+    const leftColor=left===null?'#888':left<=0?'#1a7a4a':left<5000?'#c47a00':'#006caa';
+    const bg=i%2===0?'#ffffff':'#f8f9fa';
+    const st=p.status||'live';
+    const stColor=st==='live'?'#1a7a4a':st==='hold'?'#c47a00':'#888';
+    return `<tr style="background:${bg}">
+      <td style="padding:9px 12px;border-bottom:1px solid #e8eaed;font-weight:600;color:#1a1a2e">${esc(p.name)}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e8eaed">${esc(p.manager||'—')}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e8eaed">${esc(p.client||'—')}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e8eaed;font-family:'Courier New',monospace;font-size:11px">${esc(db.code||'—')}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e8eaed"><span style="color:${stColor};font-weight:700;font-size:11px;text-transform:uppercase">${st}</span></td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e8eaed;text-align:right;font-family:'Courier New',monospace;font-weight:700;color:#006caa">${agreed>0?'£'+agreed.toLocaleString():'—'}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e8eaed;text-align:right;font-family:'Courier New',monospace;font-weight:700;color:${leftColor}">${leftStr}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e8eaed;font-size:11px">${esc(db.invoiceContact||'—')}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e8eaed;font-size:11px">${esc(db.invoiceInstructions||'—')}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e8eaed;font-size:11px">${esc(db.invoiceTimeline||'—')}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e8eaed;font-size:11px;font-family:'Courier New',monospace">${esc(db.poNumber||'—')}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e8eaed;font-size:11px;color:#666">${esc(db.dbNotes||'—')}</td>
+    </tr>`;
+  }).join('');
+  const totalAgreed=rows.reduce((s,p)=>s+(+p.agreed||0)+(+p.toAgree||0),0);
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    *{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;box-sizing:border-box}
+    body{background:#f0f2f5;padding:0}
+    .page{max-width:1200px;margin:0 auto;background:white;min-height:100vh}
+    .header{background:linear-gradient(135deg,#1a1a2e 0%,#0075ae 100%);padding:24px 36px;display:flex;align-items:center;justify-content:space-between}
+    .logo-area{display:flex;align-items:center;gap:16px}
+    .logo-box{background:white;padding:4px 10px;border-radius:3px}
+    .logo-box svg{height:28px;width:auto;display:block}
+    .header-title{color:white}
+    .header-title h1{font-size:20px;font-weight:700;letter-spacing:.03em}
+    .header-title p{font-size:11px;opacity:.75;margin-top:2px}
+    .header-right{text-align:right;color:white}
+    .header-right .date{font-size:11px;opacity:.7}
+    .header-right .count{font-size:22px;font-weight:700;margin-top:2px}
+    .summary{display:flex;gap:0;border-bottom:3px solid #0075ae}
+    .sum-box{flex:1;padding:14px 20px;border-right:1px solid #e8eaed}
+    .sum-box:last-child{border-right:none}
+    .sum-label{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#888;margin-bottom:3px}
+    .sum-val{font-size:20px;font-weight:700;color:#1a1a2e;font-family:'Courier New',monospace}
+    .sum-sub{font-size:10px;color:#aaa;margin-top:1px}
+    .tbl-wrap{padding:0 0 36px}
+    table{width:100%;border-collapse:collapse}
+    thead tr{background:#1a1a2e}
+    thead th{padding:10px 12px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:white;white-space:nowrap}
+    thead th:nth-child(6),thead th:nth-child(7){text-align:right}
+    .footer{background:#f8f9fa;border-top:2px solid #0075ae;padding:12px 36px;display:flex;justify-content:space-between;font-size:10px;color:#aaa}
+    @media print{body{background:white}.page{box-shadow:none}}
+  </style></head><body>
+  <div class="page">
+    <div class="header">
+      <div class="logo-area">
+        <div class="logo-box"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.74 59.75"><rect fill="#0075ae" width="100.74" height="59.75"/><path fill="#fff" d="M25.91,43.23c-6.94,0-13.01-5.25-13.01-13.36s6.08-13.36,13.01-13.36c2.95,0,5.18.79,6.94,1.75v4.84c-2.03-1.34-3.91-2.09-6.49-2.09-4.5,0-8.55,3.4-8.55,8.86s4.05,8.89,8.55,8.89c2.58,0,4.46-.86,6.49-2.2v4.91c-1.75.96-3.98,1.75-6.94,1.75Z"/><path fill="#fff" d="M37.45,17.1h4.81v21.15h10.81v4.43h-15.62v-25.58Z"/><path fill="#fff" d="M69.58,23.66h-.03l-5.84,19.02h-5.05l-7.62-25.58h4.91l5.36,19.64h.07l5.91-19.64h4.53l6.01,19.67h.03l5.18-19.67h4.81l-7.48,25.58h-4.91l-5.87-19.02Z"/></svg></div>
+        <div class="header-title"><h1>Project Database</h1><p>CSSW London Waterproofing — Invoice Register</p></div>
+      </div>
+      <div class="header-right">
+        <div class="date">${dateStr}</div>
+        <div class="count">${rows.length} project${rows.length!==1?'s':''}</div>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="sum-box"><div class="sum-label">Total Agreed</div><div class="sum-val">£${totalAgreed.toLocaleString()}</div><div class="sum-sub">across ${rows.length} project${rows.length!==1?'s':''}</div></div>
+      <div class="sum-box"><div class="sum-label">Live Projects</div><div class="sum-val">${rows.filter(p=>(p.status||'live')==='live').length}</div><div class="sum-sub">active</div></div>
+      <div class="sum-box"><div class="sum-label">With PO Number</div><div class="sum-val">${rows.filter(p=>getProjDB(p.id).poNumber).length}</div><div class="sum-sub">of ${rows.length}</div></div>
+      <div class="sum-box"><div class="sum-label">Invoice Contacts Set</div><div class="sum-val">${rows.filter(p=>getProjDB(p.id).invoiceContact).length}</div><div class="sum-sub">of ${rows.length}</div></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Project</th><th>Manager</th><th>Client</th><th>Code</th><th>Status</th>
+          <th>Agreed Fee</th><th>Left to Invoice</th>
+          <th>Invoice Contact(s)</th><th>Instructions</th><th>Timeline</th><th>PO Number</th><th>Notes</th>
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+    <div class="footer">
+      <span>CLW — CSSW London Waterproofing · Confidential — Internal Use Only</span>
+      <span>Generated ${dateStr}</span>
+    </div>
+  </div></body></html>`;
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  showToast('Exported '+rows.length+' project'+(rows.length!==1?'s':'')+' — use Ctrl+P to save as PDF','ok');
+}
+
 // ═══════════════════════════════════════════════════════════
 // FIREBASE REAL-TIME SYNC
 // ═══════════════════════════════════════════════════════════
@@ -2032,6 +2285,7 @@ function applyFirestoreData(d) {
   if (d.teamPeople)  teamPeople  = d.teamPeople;
   if (d.l10Data)     { const all = l10LoadAll(); l10SaveAll({ ...all, ...d.l10Data }); }
   if (d.wheelData)   Object.assign(WHEEL_DATA, d.wheelData);
+  if (d.projDB)      projDB = {...projDB, ...d.projDB};
   loadedFileName = 'Firebase';
   // Re-render whichever page is active
   const ap = document.querySelector('.pg.active');
@@ -2075,7 +2329,7 @@ async function saveAll(){
     const{getFirestore,doc,setDoc}=window.firebase_fs;
     const docRef=doc(db,'clwhub','main');
     const now=new Date();
-    await setDoc(docRef,cleanForFirestore({projects,scorecard,qtrWeeks,teamColors,teamPeople,
+    await setDoc(docRef,cleanForFirestore({projects,scorecard,qtrWeeks,teamColors,teamPeople,projDB,
       l10Data:l10LoadAll(),wheelData:WHEEL_DATA,
       savedAt:now.toLocaleDateString('en-GB')+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
       version:'8.5'}));
