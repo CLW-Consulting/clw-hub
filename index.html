@@ -1986,11 +1986,68 @@ function populateQtrSelect(){
   const sel=document.getElementById('sc-qtr');if(!sel)return;
   const qtrs=Object.keys(scorecard).sort();
   sel.innerHTML=qtrs.map(q=>`<option value="${q}">${q.replace('-',' ')}</option>`).join('');
-  // Default to current quarter
   const now=new Date();
   const curQ='Q'+Math.ceil((now.getMonth()+1)/3)+'-'+now.getFullYear();
   sel.value=qtrs.includes(curQ)?curQ:(qtrs[qtrs.length-1]||'');
 }
+function renderBenWon(qtr,ben,bT,bTgt,bPct,weeks){
+  const el=document.getElementById('ben-won');
+  if(!el)return;
+  // Build HTML with inputs that use onchange (fires on blur/enter, NOT on every keystroke)
+  // onchange does NOT re-render the DOM so the input stays focused
+  const cells=weeks.slice(0,13).map((w,i)=>{
+    const proj=ben.workWonProjects&&ben.workWonProjects[i]?ben.workWonProjects[i]:'';
+    return `<div class="wc">
+      <div class="wl" style="cursor:pointer;color:var(--blue)" onclick="promptWonProject('${qtr}',${i})" title="Click to set project name">${w}</div>
+      ${proj?`<div style="font-size:8px;color:var(--blue);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${proj}">📋 ${proj}</div>`:''}
+      <input class="wi" type="number" min="0" step="1" value="${ben.workWon&&ben.workWon[i]?ben.workWon[i]:0}"
+        onchange="saveBenWon('${qtr}',${i},+this.value||0)"
+        style="text-align:right">
+    </div>`;
+  }).join('');
+  el.innerHTML=`
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+      <div>
+        <div id="ben-total-val" style="font-size:22px;font-weight:700;color:var(--blue);letter-spacing:-.02em">${fmtGBP(bT)}</div>
+        <div style="font-size:10px;color:var(--grey-d);font-weight:600;text-transform:uppercase;letter-spacing:.05em">of ${fmtGBP(bTgt)} target</div>
+      </div>
+      <div style="flex:1;min-width:180px">
+        <div class="pbg" style="height:6px">
+          <div id="ben-pct-bar" class="pf" style="width:${bPct}%;background:${barClr(bT)}"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--grey-d);font-weight:500">
+          <span id="ben-pct-txt">${bPct.toFixed(0)}% achieved</span>
+          <span id="ben-rem-txt">${fmtGBP(Math.max(bTgt-bT,0))} remaining</span>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--grey-d);margin-bottom:5px">Weekly Work Won (£) — click week label to add project name</div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">${cells}</div>`;
+}
+
+// Called onchange — updates data and refreshes totals WITHOUT destroying DOM
+function saveBenWon(qtr,idx,val){
+  if(!scorecard[qtr])scorecard[qtr]={};
+  if(!scorecard[qtr].Ben)scorecard[qtr].Ben={workWon:new Array(13).fill(0),workWonProjects:new Array(13).fill(''),target:195000};
+  if(!scorecard[qtr].Ben.workWon)scorecard[qtr].Ben.workWon=new Array(13).fill(0);
+  scorecard[qtr].Ben.workWon[idx]=val;
+  // Recalculate total and update display elements (no DOM rebuild)
+  const ben=scorecard[qtr].Ben;
+  const bT=ben.workWon.reduce((s,v)=>s+(+v||0),0);
+  const bTgt=ben.target||195000;
+  const bPct=Math.min((bT/bTgt)*100,100);
+  const tv=document.getElementById('ben-total-val');
+  if(tv)tv.textContent=fmtGBP(bT);
+  const pb=document.getElementById('ben-pct-bar');
+  if(pb){pb.style.width=bPct+'%';pb.style.background=barClr(bT);}
+  const pt=document.getElementById('ben-pct-txt');
+  if(pt)pt.textContent=bPct.toFixed(0)+'% achieved';
+  const rt=document.getElementById('ben-rem-txt');
+  if(rt)rt.textContent=fmtGBP(Math.max(bTgt-bT,0))+' remaining';
+  saveAll();
+}
+
+
 function renderScorecard(){
   const qtr=document.getElementById('sc-qtr').value;
   const weeks=qtrWeeks[qtr]||[];
@@ -1998,14 +2055,14 @@ function renderScorecard(){
   const qd=scorecard[qtr];
   const ben=qd.Ben||{workWon:new Array(13).fill(0),target:195000};
   const bT=ben.workWon.reduce((s,v)=>s+(+v||0),0),bTgt=ben.target||195000,bPct=Math.min((bT/bTgt)*100,100);
-  document.getElementById('ben-won').innerHTML=`<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-size:22px;font-weight:700;color:var(--blue);letter-spacing:-.02em">${fmtGBP(bT)}</div><div style="font-size:10px;color:var(--grey-d);font-weight:600;text-transform:uppercase;letter-spacing:.05em">of ${fmtGBP(bTgt)} target</div></div><div style="flex:1;min-width:180px"><div class="pbg" style="height:6px"><div class="pf" style="width:${bPct}%;background:${barClr(bT)}"></div></div><div style="display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--grey-d);font-weight:500"><span>${bPct.toFixed(0)}% achieved</span><span>${fmtGBP(Math.max(bTgt-bT,0))} remaining</span></div></div></div><div style="font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--grey-d);margin-bottom:5px">Weekly Work Won (£)</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">${weeks.slice(0,13).map((w,i)=>`<div class="wc"><div class="wl">${w}</div><input class="wi" type="number" value="${ben.workWon[i]||0}" oninput="if(!scorecard[qtr].Ben.workWon)scorecard[qtr].Ben.workWon=new Array(13).fill(0);scorecard[qtr].Ben.workWon[${i}]=+this.value||0;renderScorecard();saveAll();"></div>`).join('')}</div>`;
+  renderBenWon(qtr,ben,bT,bTgt,bPct,weeks);
   const people=teamPeople.filter(p=>p!=='Ben');
   document.getElementById('sc-grid').innerHTML=people.map(name=>{
     const color=teamColors[name]||'#6b7580';
     const pd=qd[name]||{billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)};
     if(!pd.billable)pd.billable=new Array(13).fill(0);if(!pd.holiday)pd.holiday=new Array(13).fill(0);if(!pd.sick)pd.sick=new Array(13).fill(0);
     const totH=pd.billable.reduce((s,v)=>s+(+v||0),0),totD=totH/8,totHol=pd.holiday.reduce((s,v)=>s+(+v||0),0),qtarget=(name==='Andrea'?18:45),pct=Math.min((totD/qtarget)*100,100);
-    return`<div class="pc"><div class="ph2" style="background:${color}"><div class="pn">${name}</div><div style="font-size:9px;color:rgba(255,255,255,.65);font-weight:600">${qtr.replace('-',' ')}</div></div><div class="pb2"><div class="pr"><div class="pm"><span>Billable Days</span><span class="val">${totD.toFixed(1)} / ${qtarget}</span></div><div class="pbg"><div class="pf" style="width:${pct}%;background:${color}"></div></div></div><div style="display:flex;gap:12px;margin-bottom:8px;font-size:10px;color:var(--grey-d);font-weight:500"><span>Total: <strong style="color:var(--black)">${totH.toFixed(1)} hrs</strong></span><span>Holiday: <strong style="color:var(--black)">${totHol} days</strong></span></div><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin-bottom:3px">Billable hrs / week</div><div class="wg">${weeks.slice(0,13).map((w,i)=>`<div class="wc"><div class="wl">${w}</div><input class="wi" type="number" value="${pd.billable[i]||0}" oninput="scorecard['${qtr}']['${name}'].billable[${i}]=+this.value||0;markUnsaved()"></div>`).join('')}</div><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin:5px 0 3px">Holiday / Sick</div><div class="wg">${weeks.slice(0,13).map((w,i)=>`<div class="wc"><div class="wl">${w}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px"><input class="wi" type="number" value="${pd.holiday[i]||0}" title="Holiday" placeholder="H" oninput="scorecard['${qtr}']['${name}'].holiday[${i}]=+this.value||0;markUnsaved()"><input class="wi" type="number" value="${pd.sick[i]||0}" title="Sick" placeholder="S" style="border-color:#fdecea" oninput="scorecard['${qtr}']['${name}'].sick[${i}]=+this.value||0;markUnsaved()"></div></div>`).join('')}</div></div></div>`;
+    return`<div class="pc"><div class="ph2" style="background:${color}"><div class="pn">${name}</div><div style="font-size:9px;color:rgba(255,255,255,.65);font-weight:600">${qtr.replace('-',' ')}</div></div><div class="pb2"><div class="pr"><div class="pm"><span>Billable Days</span><span class="val">${totD.toFixed(1)} / ${qtarget}</span></div><div class="pbg"><div class="pf" style="width:${pct}%;background:${color}"></div></div></div><div style="display:flex;gap:12px;margin-bottom:8px;font-size:10px;color:var(--grey-d);font-weight:500"><span>Total: <strong style="color:var(--black)">${totH.toFixed(1)} hrs</strong></span><span>Holiday: <strong style="color:var(--black)">${totHol} days</strong></span></div><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin-bottom:3px">Billable hrs / week</div><div class="wg">${weeks.slice(0,13).map((w,i)=>`<div class="wc"><div class="wl">${w}</div><input class="wi" type="number" value="${pd.billable[i]||0}" oninput="scorecard['${qtr}']['${name}'].billable[${i}]=+this.value||0;renderScorecard();saveAll();"></div>`).join('')}</div><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-d);margin:5px 0 3px">Holiday / Sick</div><div class="wg">${weeks.slice(0,13).map((w,i)=>`<div class="wc"><div class="wl">${w}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px"><input class="wi" type="number" value="${pd.holiday[i]||0}" title="Holiday" placeholder="H" oninput="scorecard['${qtr}']['${name}'].holiday[${i}]=+this.value||0;renderScorecard();saveAll();"><input class="wi" type="number" value="${pd.sick[i]||0}" title="Sick" placeholder="S" style="border-color:#fdecea" oninput="scorecard['${qtr}']['${name}'].sick[${i}]=+this.value||0;renderScorecard();saveAll();"></div></div>`).join('')}</div></div></div>`;
   }).join('');
 }
 function openNewQtrModal(){document.getElementById('qtr-modal').classList.add('open')}
