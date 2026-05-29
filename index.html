@@ -372,6 +372,10 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
       <div class="ni" onclick="nav('pipeline')"><span class="nic">◎</span> Pipeline</div>
     </nav>
     <nav class="nsec">
+      <div class="nlbl">Private</div>
+      <div class="ni" onclick="openTodo()"><span class="nic">✓</span> To Do</div>
+    </nav>
+    <nav class="nsec">
       <div class="nlbl">Team</div>
       <div class="ni" onclick="nav('scorecard')"><span class="nic">◐</span> Scorecard</div>
       <div class="ni" onclick="nav('wheels')"><span class="nic">◎</span> Success Wheels</div>
@@ -673,6 +677,86 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
             <tbody id="pdb-tbody"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- ══ TO DO ══ -->
+    <div class="pg" id="page-todo" style="display:none">
+      <div class="ph">
+        <div><div class="pt">To Do</div><div class="ps">Private workspace — Andrea &amp; Ben</div></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-d btn-sm" onclick="closeTodo()">🔒 Lock</button>
+        </div>
+      </div>
+      <div class="page-scroll" style="padding:18px 22px">
+        <!-- AI Extract panel -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="ch"><div class="ct">📋 Extract from email / text / transcript</div><div style="font-size:10px;color:var(--grey-d)">Paste anything — AI will pull out key to-do points</div></div>
+          <div style="padding:14px">
+            <textarea id="todo-paste-area" placeholder="Paste email, notes, transcript or any text here…" style="width:100%;height:100px;padding:10px;border:1px solid var(--bdr);border-radius:var(--r);font-family:var(--f);font-size:12px;resize:vertical;outline:none;box-sizing:border-box"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+              <select id="todo-assign-extract" class="fsel">
+                <option value="Andrea">Andrea</option>
+                <option value="Ben">Ben</option>
+                <option value="Both">Both</option>
+              </select>
+              <button class="btn btn-p btn-sm" onclick="extractTodos()" id="todo-extract-btn">✦ Extract key points</button>
+              <span id="todo-extract-status" style="font-size:10px;color:var(--grey-d)"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add manual to-do -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="ch"><div class="ct">Add To Do Item</div></div>
+          <div style="padding:14px;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
+            <input id="todo-new-text" type="text" placeholder="What needs to be done…" class="fi" style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter')addTodoItem()">
+            <select id="todo-new-assign" class="fsel">
+              <option value="Andrea">Andrea</option>
+              <option value="Ben">Ben</option>
+              <option value="Both">Both</option>
+            </select>
+            <button class="btn btn-p btn-sm" onclick="addTodoItem()">+ Add</button>
+          </div>
+        </div>
+
+        <!-- Active to-dos -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="card">
+            <div class="ch"><div class="ct" style="color:var(--blue)">Andrea</div><div id="todo-count-andrea" style="font-size:10px;color:var(--grey-d)"></div></div>
+            <div id="todo-list-andrea" style="padding:8px"></div>
+          </div>
+          <div class="card">
+            <div class="ch"><div class="ct" style="color:var(--purple)">Ben</div><div id="todo-count-ben" style="font-size:10px;color:var(--grey-d)"></div></div>
+            <div id="todo-list-ben" style="padding:8px"></div>
+          </div>
+        </div>
+
+        <!-- Completed -->
+        <div class="card" style="margin-top:14px">
+          <div class="ch" onclick="toggleTodoCompleted()" style="cursor:pointer">
+            <div class="ct" style="color:var(--green)">✓ Completed</div>
+            <div id="todo-completed-toggle" style="font-size:10px;color:var(--grey-m)">click to show</div>
+          </div>
+          <div id="todo-completed-section" style="display:none;padding:8px" id="todo-list-done"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- To Do password modal -->
+    <div class="mo" id="todo-modal" style="z-index:2000">
+      <div class="modal" style="width:340px;text-align:center;padding:32px 28px">
+        <div style="font-size:28px;margin-bottom:12px">🔒</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:6px">Private Workspace</div>
+        <div style="font-size:11px;color:var(--grey-d);margin-bottom:18px">Enter your personal PIN to access</div>
+        <input id="todo-pin-input" type="password" placeholder="PIN"
+          style="width:100%;padding:10px;border:1.5px solid var(--bdr);border-radius:var(--r);font-size:16px;text-align:center;letter-spacing:.2em;outline:none;margin-bottom:8px;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')checkTodoPin()"
+          oninput="document.getElementById('todo-pin-err').style.display='none'">
+        <div id="todo-pin-err" style="display:none;color:var(--red);font-size:11px;margin-bottom:8px">Incorrect PIN</div>
+        <button class="btn btn-p" style="width:100%;justify-content:center;padding:10px" onclick="checkTodoPin()">Enter →</button>
+        <button class="btn btn-s btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="closeModal('todo-modal')">Cancel</button>
+        <div style="font-size:9px;color:var(--grey-m);margin-top:14px">PIN: 8551</div>
       </div>
     </div>
   </main>
@@ -2293,6 +2377,167 @@ function exportProjDB(mode){
   w.document.write(html);
   w.document.close();
   showToast('Exported '+rows.length+' project'+(rows.length!==1?'s':'')+' — use Ctrl+P to save as PDF','ok');
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// TO DO LIST — Private workspace
+// ═══════════════════════════════════════════════════════════
+let todoData = []; // [{id,text,assignee,date,done,doneDate,source}]
+let todoUnlocked = false;
+let _showTodoDone = false;
+const TODO_PINS = {Andrea:'8551', Ben:'8551', Both:'8551'};
+
+function openTodo(){
+  if(todoUnlocked){showTodoPage();return;}
+  document.getElementById('todo-pin-input').value='';
+  document.getElementById('todo-pin-err').style.display='none';
+  document.getElementById('todo-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('todo-pin-input').focus(),100);
+}
+function checkTodoPin(){
+  const pin=document.getElementById('todo-pin-input').value;
+  if(pin==='8551'){
+    todoUnlocked=true;
+    closeModal('todo-modal');
+    showTodoPage();
+  } else {
+    document.getElementById('todo-pin-err').style.display='block';
+    document.getElementById('todo-pin-input').value='';
+    document.getElementById('todo-pin-input').focus();
+  }
+}
+function showTodoPage(){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-todo').classList.add('active');
+  document.getElementById('page-todo').style.display='';
+  document.querySelectorAll('.ni').forEach(n=>{if(n.getAttribute('onclick')==='openTodo()')n.classList.add('active');});
+  renderTodos();
+}
+function closeTodo(){
+  todoUnlocked=false;
+  nav('dashboard');
+  document.getElementById('page-todo').style.display='none';
+}
+
+function addTodoItem(text='',assignee='',source='manual'){
+  const t=text||document.getElementById('todo-new-text')?.value?.trim();
+  if(!t)return;
+  const a=assignee||document.getElementById('todo-new-assign')?.value||'Andrea';
+  const item={id:'td'+Date.now()+Math.random().toString(36).slice(2,6),text:t,assignee:a,date:new Date().toLocaleDateString('en-GB'),done:false,doneDate:'',source};
+  todoData.push(item);
+  if(document.getElementById('todo-new-text'))document.getElementById('todo-new-text').value='';
+  renderTodos();
+  saveTodos();
+}
+function tickTodo(id){
+  const item=todoData.find(x=>x.id===id);if(!item)return;
+  item.done=!item.done;
+  item.doneDate=item.done?new Date().toLocaleDateString('en-GB'):'';
+  renderTodos();saveTodos();
+}
+function deleteTodo(id){
+  todoData=todoData.filter(x=>x.id!==id);
+  renderTodos();saveTodos();
+}
+function toggleTodoCompleted(){
+  _showTodoDone=!_showTodoDone;
+  document.getElementById('todo-completed-section').style.display=_showTodoDone?'block':'none';
+  document.getElementById('todo-completed-toggle').textContent=_showTodoDone?'click to hide':'click to show';
+  if(_showTodoDone)renderTodoDone();
+}
+
+function renderTodos(){
+  ['Andrea','Ben'].forEach(name=>{
+    const items=todoData.filter(x=>!x.done&&(x.assignee===name||x.assignee==='Both'));
+    const el=document.getElementById('todo-list-'+name.toLowerCase());
+    const cnt=document.getElementById('todo-count-'+name.toLowerCase());
+    if(!el)return;
+    if(cnt)cnt.textContent=items.length+' open';
+    if(!items.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--grey-m);font-size:11px">Nothing here ✓</div>';return;}
+    el.innerHTML=items.sort((a,b)=>b.id.localeCompare(a.id)).map(item=>`
+      <div style="display:flex;align-items:flex-start;gap:8px;padding:9px 10px;border-bottom:1px solid var(--bdr);${item.source==='ai'?'background:rgba(0,108,170,.03)':''}">
+        <input type="checkbox" style="margin-top:3px;accent-color:var(--blue);flex-shrink:0" onchange="tickTodo('${item.id}')">
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;color:var(--black)">${esc(item.text)}</div>
+          <div style="font-size:9px;color:var(--grey-m);margin-top:2px">
+            ${item.date}${item.source==='ai'?' · ✦ AI extracted':''}
+            ${item.assignee==='Both'?'<span style="margin-left:4px;font-size:8px;background:var(--purple-bg);color:var(--purple);padding:1px 5px;border-radius:10px;font-weight:700">Both</span>':''}
+          </div>
+        </div>
+        <button onclick="deleteTodo('${item.id}')" style="background:none;border:none;cursor:pointer;color:var(--grey-m);font-size:11px;flex-shrink:0">✕</button>
+      </div>`).join('');
+  });
+  if(_showTodoDone)renderTodoDone();
+}
+function renderTodoDone(){
+  const items=todoData.filter(x=>x.done);
+  const el=document.getElementById('todo-completed-section');if(!el)return;
+  if(!items.length){el.innerHTML='<div style="text-align:center;padding:12px;color:var(--grey-m);font-size:11px">No completed items yet</div>';return;}
+  el.innerHTML=items.sort((a,b)=>(b.doneDate||'').localeCompare(a.doneDate||'')).map(item=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--bdr);opacity:.6">
+      <span style="color:var(--green);font-size:12px">✓</span>
+      <div style="flex:1">
+        <div style="font-size:12px;text-decoration:line-through;color:var(--grey-d)">${esc(item.text)}</div>
+        <div style="font-size:9px;color:var(--grey-m)">${item.assignee} · Done ${item.doneDate||''}</div>
+      </div>
+      <button onclick="deleteTodo('${item.id}')" style="background:none;border:none;cursor:pointer;color:var(--grey-m);font-size:11px">✕</button>
+    </div>`).join('');
+}
+
+// AI extraction using Anthropic API
+async function extractTodos(){
+  const text=document.getElementById('todo-paste-area')?.value?.trim();
+  if(!text){showToast('Paste some text first','err');return;}
+  const btn=document.getElementById('todo-extract-btn');
+  const status=document.getElementById('todo-extract-status');
+  btn.disabled=true;btn.textContent='Extracting…';status.textContent='';
+  try{
+    const assignee=document.getElementById('todo-assign-extract')?.value||'Andrea';
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:`Extract the key action items and to-do points from the following text. Return ONLY a JSON array of strings, each being a clear, concise action item. No explanation, no markdown, just a raw JSON array.\n\nText:\n${text}`}]
+      })
+    });
+    const data=await resp.json();
+    const raw=data.content?.[0]?.text||'[]';
+    const clean=raw.replace(/^```json|^```|```$/gm,'').trim();
+    const items=JSON.parse(clean);
+    if(!Array.isArray(items)||!items.length){showToast('No action items found','err');return;}
+    items.forEach(t=>addTodoItem(t.trim(),assignee,'ai'));
+    document.getElementById('todo-paste-area').value='';
+    status.textContent=items.length+' items extracted';
+    showToast('✓ '+items.length+' action items extracted','ok');
+  }catch(e){
+    console.error(e);showToast('Extraction failed','err');
+    status.textContent='Failed — try again';
+  } finally{
+    btn.disabled=false;btn.textContent='✦ Extract key points';
+  }
+}
+
+function saveTodos(){
+  if(!_fbReady){return;}
+  // Save todoData via Firebase as part of main data
+  const{getFirestore,doc,setDoc}=window.firebase_fs;
+  const docRef=doc(db,'clwhub','todos');
+  setDoc(docRef,cleanForFirestore({todoData,savedAt:new Date().toLocaleDateString('en-GB')})).catch(e=>console.error('Todo save error',e));
+}
+function loadTodos(){
+  if(!_fbReady)return;
+  const{getFirestore,doc,onSnapshot}=window.firebase_fs;
+  const docRef=doc(db,'clwhub','todos');
+  onSnapshot(docRef,(snap)=>{
+    if(snap.exists()&&snap.data().todoData){
+      todoData=snap.data().todoData;
+      if(document.getElementById('page-todo')?.classList.contains('active'))renderTodos();
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
