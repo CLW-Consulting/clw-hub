@@ -952,14 +952,19 @@ function launch(){
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════
 function computeFeePerf(){
-  const live=projects.filter(p=>!p.prospective&&(p.status||'live')!=='complete');
-  function mT(ym){return live.reduce((s,p)=>s+((p.fees&&p.fees[ym])?+p.fees[ym]:0),0);}
+  const fmt=v=>v>=1000?'£'+(v/1000).toFixed(1)+'K':'£'+Math.round(v);
+  const tgt=195000;
+  function qWon(q){const ww=scorecard[q]?.Ben?.workWon||[];return ww.reduce((s,v)=>s+(+v||0),0);}
+  const q1Won=qWon('Q1-2026'),q2Won=qWon('Q2-2026');
+  const all=projects.filter(p=>!p.prospective);
+  function mT(ym){return all.reduce((s,p)=>s+((p.fees&&p.fees[ym])?+p.fees[ym]:0),0);}
   const jan=mT('2026-01'),feb=mT('2026-02'),mar=mT('2026-03');
   const apr=mT('2026-04'),may=mT('2026-05'),jun=mT('2026-06');
-  const q1=jan+feb+mar,q2=apr+may+jun,tgt=195000;
-  const fmt=v=>v>=1000?'£'+(v/1000).toFixed(1)+'K':'£'+Math.round(v);
-  return{q1Won:fmt(q1),q1Left:fmt(Math.max(0,tgt-q1)),q2Won:fmt(q2),q2Left:fmt(Math.max(0,tgt-q2)),
-    q1Avg:fmt(q1/3),q2Avg:fmt(q2/3),jan:fmt(jan),feb:fmt(feb),mar:fmt(mar),apr:fmt(apr),may:fmt(may),jun:fmt(jun)};
+  const now=new Date(),curYm=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const q2Ms=[['2026-04',apr],['2026-05',may],['2026-06',jun]].filter(([m])=>m<=curYm);
+  const q2Avg=q2Ms.length?q2Ms.reduce((s,[,v])=>s+v,0)/q2Ms.length:0;
+  return{q1Won:fmt(q1Won),q1Left:fmt(Math.max(0,tgt-q1Won)),q2Won:fmt(q2Won),q2Left:fmt(Math.max(0,tgt-q2Won)),
+    q1Avg:fmt((jan+feb+mar)/3),q2Avg:fmt(q2Avg),jan:fmt(jan),feb:fmt(feb),mar:fmt(mar),apr:fmt(apr),may:fmt(may),jun:fmt(jun)};
 }
 function renderDashboard(){
   document.getElementById('dash-date').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
@@ -968,12 +973,12 @@ function renderDashboard(){
   const pipe=projects.filter(p=>p.prospective);
   const thisM=live.reduce((s,p)=>s+((p.fees&&p.fees[ym])?+p.fees[ym]:0),0);
   const nextM=live.reduce((s,p)=>s+((p.fees&&p.fees[nm])?+p.fees[nm]:0),0);
-  const pipeV=pipe.reduce((s,p)=>s+(+p.agreed||0)+(+p.toAgree||0),0);
+  const activePipe=pipe.filter(p=>!p.notWon);const pipeProspectV=activePipe.reduce((s,p)=>s+(+p.agreed||0)+(+p.toAgree||0),0);const liveTBA=projects.filter(p=>!p.prospective&&(+p.toAgree||0)>0).reduce((s,p)=>s+(+p.toAgree||0),0);const pipeV=pipeProspectV+liveTBA;
   document.getElementById('stat-grid').innerHTML=`
     <div class="sc cb"><div class="slbl">Active Projects</div><div class="sval">${live.length}</div><div class="ssub">confirmed</div></div>
     <div class="sc ${statC(thisM)}"><div class="slbl">This Month — ${fmtM(ym)}</div><div class="sval">${fmtGBP(thisM)}</div><div class="ssub">${thisM>=45000?'✓ Above target':thisM>=40000?'⚠ Near':'✗ Below'}</div></div>
     <div class="sc ${statC(nextM)}"><div class="slbl">Next Month — ${fmtM(nm)}</div><div class="sval">${fmtGBP(nextM)}</div><div class="ssub">${nextM>=45000?'✓ Above':nextM>=40000?'⚠ Near':'✗ Below'}</div></div>
-    <div class="sc cm"><div class="slbl">Pipeline Value</div><div class="sval">${fmtGBP(pipeV)}</div><div class="ssub">${pipe.length} prospects</div></div>`;
+    <div class="sc cm"><div class="slbl">Pipeline Value</div><div class="sval">${fmtGBP(pipeV)}</div><div class="ssub">${activePipe.length} prospects · ${fmtGBP(liveTBA)} TBA on live</div></div>`;
   const fp=computeFeePerf();
   document.getElementById('dash-qtr-label').textContent='From Project Forecast';
   document.getElementById('dash-l10-metrics').innerHTML=`
@@ -994,18 +999,20 @@ function renderDashboard(){
   renderChart('dash-chart');
 }
 function renderChart(cid){
-  const live=projects.filter(p=>!p.prospective);
+  const all=projects.filter(p=>!p.prospective);
   const cur=curYM();
   const months=Array.from({length:19},(_,i)=>nextYM(cur,i-6));
-  const data=months.map(ym=>({ym,total:live.reduce((s,p)=>s+((p.fees&&p.fees[ym])?+p.fees[ym]:0),0),isPast:ym<cur}));
-  const max=Math.max(...data.map(d=>d.total),45000,1);
-  const tH=(45000/max)*130;
+  const data=months.map(ym=>({ym,total:all.reduce((s,p)=>s+((p.fees&&p.fees[ym])?+p.fees[ym]:0),0),isPast:ym<cur}));
+  const maxVal=Math.max(...data.map(d=>d.total),1);
+  const BAR_H=160;
+  const tH=(45000/maxVal)*BAR_H;
   let prevYr='',h=`<div class="cbars"><div class="tl" style="bottom:${tH+28}px"><div class="tll">£45k target</div></div>`;
   data.forEach(d=>{
-    const ht=max>0?(d.total/max)*130:0,isCur=d.ym===cur,yr=d.ym.split('-')[0];
+    const ht=maxVal>0?(d.total/maxVal)*BAR_H:0;
+    const isCur=d.ym===cur,yr=d.ym.split('-')[0];
     if(yr!==prevYr){h+=`<div class="yr-sep">${yr}</div>`;prevYr=yr;}
     const col=d.isPast?'var(--grey-m)':barClr(d.total);
-    h+=`<div class="bg3"><div class="bv" style="${d.isPast?'color:var(--grey-m)':''}">${d.total>0?fmtGBP(d.total):''}</div><div class="b" style="height:${Math.max(ht,2)}px;background:${col};opacity:${d.isPast?'.5':'1'};${isCur?'outline:2px solid var(--blue);outline-offset:2px':''}"></div><div class="bl" style="${d.isPast?'color:var(--grey-m)':''}">${MO[+d.ym.split('-')[1]-1]}</div></div>`;
+    h+=`<div class="bg3"><div class="bv" style="font-size:9px;${d.isPast?'color:var(--grey-m)':''}">${d.total>0?fmtGBP(d.total):''}</div><div class="b" style="height:${Math.max(ht,2)}px;background:${col};opacity:${d.isPast?0.55:1};${isCur?'outline:2px solid var(--blue);outline-offset:2px':''}"></div><div class="bl" style="${d.isPast?'color:var(--grey-m)':''}">${MO[+d.ym.split('-')[1]-1]}</div></div>`;
   });
   h+='</div>';
   const el=document.getElementById(cid);if(el)el.innerHTML=h;
@@ -1556,11 +1563,9 @@ function renderTable(){
     if(showCompleted)tbody+=filtComp.map(buildRow).join('');
   }
 
-  // Total includes ALL projects: live + hold + complete
-  const allActive=projects.filter(p=>!p.prospective);
   let gt=0;
   const totCells=months.map(m=>{
-    const t=allActive.reduce((s,p)=>s+((p.fees&&p.fees[m])?+p.fees[m]:0),0);
+    const t=live.reduce((s,p)=>s+((p.fees&&p.fees[m])?+p.fees[m]:0),0);
     gt+=t;
     const cls=t>=45000?'tc-green':t>=40000?'tc-amber':'tc-red';
     const isCur=m===cur;
