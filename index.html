@@ -952,43 +952,14 @@ function launch(){
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════
 function computeFeePerf(){
-  const fmt=v=>v>=1000?'£'+(v/1000).toFixed(1)+'K':'£'+Math.round(v);
-  const tgt=195000;
-
-  // Work Won from Ben's scorecard (actual won, not forecast)
-  function getWorkWon(qtrs){
-    return qtrs.reduce((s,q)=>{
-      const ww=scorecard[q]?.Ben?.workWon||[];
-      return s+ww.reduce((a,v)=>a+(+v||0),0);
-    },0);
-  }
-  const q1Won=getWorkWon(['Q1-2026']);
-  const q2Won=getWorkWon(['Q2-2026']);
-
-  // Monthly forecast from live projects (for the avg line)
   const live=projects.filter(p=>!p.prospective&&(p.status||'live')!=='complete');
   function mT(ym){return live.reduce((s,p)=>s+((p.fees&&p.fees[ym])?+p.fees[ym]:0),0);}
   const jan=mT('2026-01'),feb=mT('2026-02'),mar=mT('2026-03');
   const apr=mT('2026-04'),may=mT('2026-05'),jun=mT('2026-06');
-
-  // Q2 avg: use actual forecast months
-  const now=new Date();
-  const curYm=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  // Only average months up to current for Q2
-  const q2Months=[['2026-04',apr],['2026-05',may],['2026-06',jun]];
-  const passedQ2=q2Months.filter(([m])=>m<=curYm);
-  const q2FcAvg=passedQ2.length?passedQ2.reduce((s,[,v])=>s+v,0)/passedQ2.length:0;
-
-  return{
-    q1Won:fmt(q1Won),
-    q1Left:fmt(Math.max(0,tgt-q1Won)),
-    q2Won:fmt(q2Won),
-    q2Left:fmt(Math.max(0,tgt-q2Won)),
-    q1Avg:fmt((jan+feb+mar)/3),
-    q2Avg:fmt(q2FcAvg),
-    jan:fmt(jan),feb:fmt(feb),mar:fmt(mar),
-    apr:fmt(apr),may:fmt(may),jun:fmt(jun)
-  };
+  const q1=jan+feb+mar,q2=apr+may+jun,tgt=195000;
+  const fmt=v=>v>=1000?'£'+(v/1000).toFixed(1)+'K':'£'+Math.round(v);
+  return{q1Won:fmt(q1),q1Left:fmt(Math.max(0,tgt-q1)),q2Won:fmt(q2),q2Left:fmt(Math.max(0,tgt-q2)),
+    q1Avg:fmt(q1/3),q2Avg:fmt(q2/3),jan:fmt(jan),feb:fmt(feb),mar:fmt(mar),apr:fmt(apr),may:fmt(may),jun:fmt(jun)};
 }
 function renderDashboard(){
   document.getElementById('dash-date').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
@@ -1004,10 +975,10 @@ function renderDashboard(){
     <div class="sc ${statC(nextM)}"><div class="slbl">Next Month — ${fmtM(nm)}</div><div class="sval">${fmtGBP(nextM)}</div><div class="ssub">${nextM>=45000?'✓ Above':nextM>=40000?'⚠ Near':'✗ Below'}</div></div>
     <div class="sc cm"><div class="slbl">Pipeline Value</div><div class="sval">${fmtGBP(pipeV)}</div><div class="ssub">${pipe.length} prospects</div></div>`;
   const fp=computeFeePerf();
-  document.getElementById('dash-qtr-label').textContent='Work Won from Scorecard · Monthly avg from Forecast';
+  document.getElementById('dash-qtr-label').textContent='From Project Forecast';
   document.getElementById('dash-l10-metrics').innerHTML=`
-    <div class="m-card"><div class="m-label">Q1 2026 — Work Won</div><div class="m-val mblue">${fp.q1Won}</div><div class="m-sub">vs £195K target · Left: <strong>${fp.q1Left}</strong></div></div>
-    <div class="m-card"><div class="m-label">Q2 2026 — Work Won</div><div class="m-val mblue">${fp.q2Won}</div><div class="m-sub">vs £195K target · Left: <strong>${fp.q2Left}</strong></div></div>
+    <div class="m-card"><div class="m-label">Q1 2026</div><div class="m-val mblue">${fp.q1Won}</div><div class="m-sub">Left: ${fp.q1Left}</div></div>
+    <div class="m-card"><div class="m-label">Q2 2026</div><div class="m-val mblue">${fp.q2Won}</div><div class="m-sub">Left: ${fp.q2Left}</div></div>
     <div class="m-card"><div class="m-label">Q1 Avg</div><div class="m-val">${fp.q1Avg}</div><div class="m-sub">Jan ${fp.jan} · Feb ${fp.feb} · Mar ${fp.mar}</div></div>
     <div class="m-card"><div class="m-label">Q2 Avg</div><div class="m-val">${fp.q2Avg}</div><div class="m-sub">Apr ${fp.apr} · May ${fp.may} · Jun ${fp.jun}</div></div>`;
   const makeList=(items,mth)=>items.length?items.sort((a,b)=>b.fees[mth]-a.fees[mth]).map(p=>`
@@ -1585,15 +1556,17 @@ function renderTable(){
     if(showCompleted)tbody+=filtComp.map(buildRow).join('');
   }
 
+  // Total includes ALL projects: live + hold + complete
+  const allActive=projects.filter(p=>!p.prospective);
   let gt=0;
   const totCells=months.map(m=>{
-    const t=live.reduce((s,p)=>s+((p.fees&&p.fees[m])?+p.fees[m]:0),0);
+    const t=allActive.reduce((s,p)=>s+((p.fees&&p.fees[m])?+p.fees[m]:0),0);
     gt+=t;
     const cls=t>=45000?'tc-green':t>=40000?'tc-amber':'tc-red';
     const isCur=m===cur;
     return`<td class="col-m${isCur?' col-cur':''}"><div class="tot-cell ${cls}">${t>0?fmtGBP(t):'—'}</div></td>`;
   }).join('');
-  tbody+=`<tr class="row-total"><td class="col-name" colspan="2" style="font-size:9px;letter-spacing:.1em;text-transform:uppercase">Total (Live)</td><td class="col-st"></td>${totCells}<td class="col-total">${fmtGBP(gt)}</td></tr>`;
+  tbody+=`<tr class="row-total"><td class="col-name" colspan="2" style="font-size:9px;letter-spacing:.1em;text-transform:uppercase">Total (All)</td><td class="col-st"></td>${totCells}<td class="col-total">${fmtGBP(gt)}</td></tr>`;
 
   document.getElementById('fc-tbody').innerHTML=tbody;
 }
