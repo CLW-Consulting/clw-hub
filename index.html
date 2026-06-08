@@ -442,6 +442,7 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
         <div class="week-label" id="week-label">—</div>
         <button class="wnav-btn" onclick="changeWeek(1)">›</button>
         <button class="btn btn-sm btn-s" style="margin-left:6px" onclick="jumpToToday()">This Week</button>
+        <button class="btn btn-sm btn-p" style="margin-left:6px" id="carry-fwd-btn" onclick="carryForward()" title="Copy projects, actions and pipeline from previous week">&#8634; Carry Forward</button>
         <span class="last-saved-l10" id="last-saved-l10">Not yet saved</span>
       </div>
       <div class="l10-body">
@@ -1160,6 +1161,71 @@ function jumpToToday(){
 }
 
 // ── L10 Render ────────────────────────────────────────────
+
+// ── Carry Forward from previous week ─────────────────────────────────────────
+function carryForward(){
+  const prevMon = getMon(new Date(curMon.getTime() - 7*86400000));
+  const prevKey = wKey(prevMon);
+  const all = l10LoadAll();
+  const prev = all[prevKey];
+
+  if(!prev){
+    showToast('No data found for previous week','err');
+    return;
+  }
+
+  const curKey = wKey(curMon);
+  const cur = l10GetWkData(curMon);
+  let changed = false;
+
+  // Carry forward live jobs (projects)
+  if(prev.liveJobs && prev.liveJobs.length){
+    const existingNames = (cur.liveJobs||[]).map(j=>j.name);
+    prev.liveJobs.forEach(function(job){
+      if(!existingNames.includes(job.name)){
+        // Carry job with fresh actions — only incomplete ones
+        const carried = Object.assign({}, job, {
+          fb: 'nr',  // reset feedback to Not Requested
+          nt: '',    // clear notes
+          bw: '',    // clear billing override
+          ac: (job.ac||[])
+            .filter(function(a){ return !a.done; })
+            .map(function(a){ return Object.assign({},a,{prevWeek:true}); })
+        });
+        cur.liveJobs = cur.liveJobs||[];
+        cur.liveJobs.push(carried);
+        changed = true;
+      } else {
+        // Job already exists — carry forward its incomplete actions
+        const existing = cur.liveJobs.find(function(j){ return j.name===job.name; });
+        if(existing){
+          const existingActionIds = (existing.ac||[]).map(function(a){ return a.id; });
+          (job.ac||[]).filter(function(a){ return !a.done; }).forEach(function(a){
+            if(!existingActionIds.includes(a.id)){
+              existing.ac = existing.ac||[];
+              existing.ac.push(Object.assign({},a,{prevWeek:true}));
+              changed = true;
+            }
+          });
+        }
+      }
+    });
+  }
+
+  if(!changed && (!prev.liveJobs || !prev.liveJobs.length)){
+    showToast('Previous week has no projects to carry forward','err');
+    return;
+  }
+
+  // Save and re-render
+  L10D = cur;
+  const updated = Object.assign({}, all);
+  updated[curKey] = cur;
+  l10SaveAll(updated);
+  renderL10();
+  showToast('✓ Carried forward from previous week','ok');
+}
+
 function renderL10(){
   if(!L10D) L10D = l10GetWkData(curMon);
   document.getElementById('week-label').textContent = fmtWk(curMon);
