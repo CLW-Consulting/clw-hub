@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJMYXllcl8xIiB2aWV3Qm94PSIwIDAgMTAwLjc0IDU5Ljc1Ij48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6IzAwNzVhZTt9LmNscy0xLC5jbHMtMntzdHJva2Utd2lkdGg6MHB4O30uY2xzLTJ7ZmlsbDojZmZmO308L3N0eWxlPjwvZGVmcz48cmVjdCBjbGFzcz0iY2xzLTEiIHdpZHRoPSIxMDAuNzQiIGhlaWdodD0iNTkuNzUiPjwvcmVjdD48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik0yNS45MSw0My4yM2MtNi45NCwwLTEzLjAxLTUuMjUtMTMuMDEtMTMuMzZzNi4wOC0xMy4zNiwxMy4wMS0xMy4zNmMyLjk1LDAsNS4xOC43OSw2Ljk0LDEuNzV2NC44NGMtMi4wMy0xLjM0LTMuOTEtMi4wOS02LjQ5LTIuMDktNC41LDAtOC41NSwzLjQtOC41NSw4Ljg2czQuMDUsOC44OSw4LjU1LDguODljMi41OCwwLDQuNDYtLjg2LDYuNDktMi4ydjQuOTFjLTEuNzUuOTYtMy45OCwxLjc1LTYuOTQsMS43NVoiPjwvcGF0aD48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik0zNy40NSwxNy4xaDQuODF2MjEuMTVoMTAuODF2NC40M2gtMTUuNjJ2LTI1LjU4WiI+PC9wYXRoPjxwYXRoIGNsYXNzPSJjbHMtMiIgZD0iTTY5LjU4LDIzLjY2aC0uMDNsLTUuODQsMTkuMDJoLTUuMDVsLTcuNjItMjUuNThoNC45MWw1LjM2LDE5LjY0aC4wN2w1LjkxLTE5LjY0aDQuNTNsNi4wMSwxOS42N2guMDNsNS4xOC0xOS42N2g0LjgxbC03LjQ4LDI1LjU4aC00LjkxbC01Ljg3LTE5LjAyWiI+PC9wYXRoPjwvc3ZnPg==">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -442,7 +443,6 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
         <div class="week-label" id="week-label">—</div>
         <button class="wnav-btn" onclick="changeWeek(1)">›</button>
         <button class="btn btn-sm btn-s" style="margin-left:6px" onclick="jumpToToday()">This Week</button>
-        <button class="btn btn-sm btn-p" style="margin-left:6px" id="carry-fwd-btn" onclick="carryForward()" title="Copy projects, actions and pipeline from previous week">&#8634; Carry Forward</button>
         <span class="last-saved-l10" id="last-saved-l10">Not yet saved</span>
       </div>
       <div class="l10-body">
@@ -1161,71 +1161,6 @@ function jumpToToday(){
 }
 
 // ── L10 Render ────────────────────────────────────────────
-
-// ── Carry Forward from previous week ─────────────────────────────────────────
-function carryForward(){
-  const prevMon = getMon(new Date(curMon.getTime() - 7*86400000));
-  const prevKey = wKey(prevMon);
-  const all = l10LoadAll();
-  const prev = all[prevKey];
-
-  if(!prev){
-    showToast('No data found for previous week','err');
-    return;
-  }
-
-  const curKey = wKey(curMon);
-  const cur = l10GetWkData(curMon);
-  let changed = false;
-
-  // Carry forward live jobs (projects)
-  if(prev.liveJobs && prev.liveJobs.length){
-    const existingNames = (cur.liveJobs||[]).map(j=>j.name);
-    prev.liveJobs.forEach(function(job){
-      if(!existingNames.includes(job.name)){
-        // Carry job with fresh actions — only incomplete ones
-        const carried = Object.assign({}, job, {
-          fb: 'nr',  // reset feedback to Not Requested
-          nt: '',    // clear notes
-          bw: '',    // clear billing override
-          ac: (job.ac||[])
-            .filter(function(a){ return !a.done; })
-            .map(function(a){ return Object.assign({},a,{prevWeek:true}); })
-        });
-        cur.liveJobs = cur.liveJobs||[];
-        cur.liveJobs.push(carried);
-        changed = true;
-      } else {
-        // Job already exists — carry forward its incomplete actions
-        const existing = cur.liveJobs.find(function(j){ return j.name===job.name; });
-        if(existing){
-          const existingActionIds = (existing.ac||[]).map(function(a){ return a.id; });
-          (job.ac||[]).filter(function(a){ return !a.done; }).forEach(function(a){
-            if(!existingActionIds.includes(a.id)){
-              existing.ac = existing.ac||[];
-              existing.ac.push(Object.assign({},a,{prevWeek:true}));
-              changed = true;
-            }
-          });
-        }
-      }
-    });
-  }
-
-  if(!changed && (!prev.liveJobs || !prev.liveJobs.length)){
-    showToast('Previous week has no projects to carry forward','err');
-    return;
-  }
-
-  // Save and re-render
-  L10D = cur;
-  const updated = Object.assign({}, all);
-  updated[curKey] = cur;
-  l10SaveAll(updated);
-  renderL10();
-  showToast('✓ Carried forward from previous week','ok');
-}
-
 function renderL10(){
   if(!L10D) L10D = l10GetWkData(curMon);
   document.getElementById('week-label').textContent = fmtWk(curMon);
@@ -1515,6 +1450,7 @@ function buildL10Report(){
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJMYXllcl8xIiB2aWV3Qm94PSIwIDAgMTAwLjc0IDU5Ljc1Ij48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6IzAwNzVhZTt9LmNscy0xLC5jbHMtMntzdHJva2Utd2lkdGg6MHB4O30uY2xzLTJ7ZmlsbDojZmZmO308L3N0eWxlPjwvZGVmcz48cmVjdCBjbGFzcz0iY2xzLTEiIHdpZHRoPSIxMDAuNzQiIGhlaWdodD0iNTkuNzUiPjwvcmVjdD48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik0yNS45MSw0My4yM2MtNi45NCwwLTEzLjAxLTUuMjUtMTMuMDEtMTMuMzZzNi4wOC0xMy4zNiwxMy4wMS0xMy4zNmMyLjk1LDAsNS4xOC43OSw2Ljk0LDEuNzV2NC44NGMtMi4wMy0xLjM0LTMuOTEtMi4wOS02LjQ5LTIuMDktNC41LDAtOC41NSwzLjQtOC41NSw4Ljg2czQuMDUsOC44OSw4LjU1LDguODljMi41OCwwLDQuNDYtLjg2LDYuNDktMi4ydjQuOTFjLTEuNzUuOTYtMy45OCwxLjc1LTYuOTQsMS43NVoiPjwvcGF0aD48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik0zNy40NSwxNy4xaDQuODF2MjEuMTVoMTAuODF2NC40M2gtMTUuNjJ2LTI1LjU4WiI+PC9wYXRoPjxwYXRoIGNsYXNzPSJjbHMtMiIgZD0iTTY5LjU4LDIzLjY2aC0uMDNsLTUuODQsMTkuMDJoLTUuMDVsLTcuNjItMjUuNThoNC45MWw1LjM2LDE5LjY0aC4wN2w1LjkxLTE5LjY0aDQuNTNsNi4wMSwxOS42N2guMDNsNS4xOC0xOS42N2g0LjgxbC03LjQ4LDI1LjU4aC00LjkxbC01Ljg3LTE5LjAyWiI+PC9wYXRoPjwvc3ZnPg==">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>CLW L10 — ${weekLabel}</title>
   <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -2385,6 +2321,7 @@ function exportProjDB(mode){
   }).join('');
   const totalAgreed=rows.reduce((s,p)=>s+(+p.agreed||0)+(+p.toAgree||0),0);
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJMYXllcl8xIiB2aWV3Qm94PSIwIDAgMTAwLjc0IDU5Ljc1Ij48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6IzAwNzVhZTt9LmNscy0xLC5jbHMtMntzdHJva2Utd2lkdGg6MHB4O30uY2xzLTJ7ZmlsbDojZmZmO308L3N0eWxlPjwvZGVmcz48cmVjdCBjbGFzcz0iY2xzLTEiIHdpZHRoPSIxMDAuNzQiIGhlaWdodD0iNTkuNzUiPjwvcmVjdD48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik0yNS45MSw0My4yM2MtNi45NCwwLTEzLjAxLTUuMjUtMTMuMDEtMTMuMzZzNi4wOC0xMy4zNiwxMy4wMS0xMy4zNmMyLjk1LDAsNS4xOC43OSw2Ljk0LDEuNzV2NC44NGMtMi4wMy0xLjM0LTMuOTEtMi4wOS02LjQ5LTIuMDktNC41LDAtOC41NSwzLjQtOC41NSw4Ljg2czQuMDUsOC44OSw4LjU1LDguODljMi41OCwwLDQuNDYtLjg2LDYuNDktMi4ydjQuOTFjLTEuNzUuOTYtMy45OCwxLjc1LTYuOTQsMS43NVoiPjwvcGF0aD48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik0zNy40NSwxNy4xaDQuODF2MjEuMTVoMTAuODF2NC40M2gtMTUuNjJ2LTI1LjU4WiI+PC9wYXRoPjxwYXRoIGNsYXNzPSJjbHMtMiIgZD0iTTY5LjU4LDIzLjY2aC0uMDNsLTUuODQsMTkuMDJoLTUuMDVsLTcuNjItMjUuNThoNC45MWw1LjM2LDE5LjY0aC4wN2w1LjkxLTE5LjY0aDQuNTNsNi4wMSwxOS42N2guMDNsNS4xOC0xOS42N2g0LjgxbC03LjQ4LDI1LjU4aC00LjkxbC01Ljg3LTE5LjAyWiI+PC9wYXRoPjwvc3ZnPg==">
   <style>
     *{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;box-sizing:border-box}
     body{background:#f0f2f5;padding:0}
