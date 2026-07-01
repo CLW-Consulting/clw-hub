@@ -443,6 +443,7 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
         <div class="week-label" id="week-label">—</div>
         <button class="wnav-btn" onclick="changeWeek(1)">›</button>
         <button class="btn btn-sm btn-s" style="margin-left:6px" onclick="jumpToToday()">This Week</button>
+        <button class="btn btn-sm btn-p" style="margin-left:6px" id="carry-fwd-btn" onclick="carryForward()" title="Copy projects and incomplete actions from previous week">&#8634; Carry Forward</button>
         <span class="last-saved-l10" id="last-saved-l10">Not yet saved</span>
       </div>
       <div class="l10-body">
@@ -1161,6 +1162,40 @@ function jumpToToday(){
 }
 
 // ── L10 Render ────────────────────────────────────────────
+function carryForward(){
+  const prevMon=getMon(new Date(curMon.getTime()-7*86400000));
+  const prevKey=wKey(prevMon);
+  const all=l10LoadAll();
+  const prev=all[prevKey];
+  if(!prev||!prev.liveJobs||!prev.liveJobs.length){showToast('No projects found in previous week','err');return;}
+  const curKey=wKey(curMon);
+  const cur=l10GetWkData(curMon);
+  let added=0;
+  prev.liveJobs.forEach(function(job){
+    const existing=(cur.liveJobs||[]).find(j=>j.name===job.name);
+    if(!existing){
+      cur.liveJobs=cur.liveJobs||[];
+      cur.liveJobs.push(Object.assign({},job,{
+        fb:'nr',nt:'',bw:'',
+        ac:(job.ac||[]).filter(a=>!a.done).map(a=>Object.assign({},a,{prevWeek:true}))
+      }));
+      added++;
+    } else {
+      (job.ac||[]).filter(a=>!a.done).forEach(function(a){
+        const ids=(existing.ac||[]).map(x=>x.id);
+        if(!ids.includes(a.id)){existing.ac=existing.ac||[];existing.ac.push(Object.assign({},a,{prevWeek:true}));added++;}
+      });
+    }
+  });
+  if(!added){showToast('All projects already on this week','err');return;}
+  L10D=cur;
+  const updated=Object.assign({},all);
+  updated[curKey]=cur;
+  l10SaveAll(updated);
+  renderL10();
+  showToast('✓ Carried forward from previous week','ok');
+}
+
 function renderL10(){
   if(!L10D) L10D = l10GetWkData(curMon);
   document.getElementById('week-label').textContent = fmtWk(curMon);
@@ -1536,14 +1571,16 @@ function getTableMonths(){
   });
 }
 
-// Left to invoice = sum of fees marked as forecast only (not issued, not paid)
+// Left to invoice = agreed fee minus what has already been issued or paid
 function calcLeftToInvoice(p){
-  if(!p.fees||!Object.keys(p.fees).length) return null;
-  const forecastOnly=Object.entries(p.fees).reduce((s,[ym,v])=>{
+  const agreed=(+p.agreed||0)+(+p.toAgree||0);
+  if(!agreed) return null;
+  // Sum everything already invoiced (issued + paid)
+  const invoiced=Object.entries(p.fees||{}).reduce((s,[ym,v])=>{
     const st=getEffectiveState(p,ym);
-    return st==='forecast'||st==='overdue'?s+(+v||0):s;
+    return st==='issued'||st==='paid'?s+(+v||0):s;
   },0);
-  return forecastOnly;
+  return Math.max(0, agreed - invoiced);
 }
 
 function renderTable(){
@@ -2165,7 +2202,7 @@ function renderScorecard(){
   }).join('');
 }
 function openNewQtrModal(){document.getElementById('qtr-modal').classList.add('open')}
-function createQuarter(){const qn=document.getElementById('nq-qtr').value,yr=document.getElementById('nq-yr').value;const key=`${qn}-${yr}`,startDate=document.getElementById('nq-start').value,target=parseFloat(document.getElementById('nq-target').value)||195000;if(scorecard[key]){showToast(`${key} already exists`,'err');return}let weeks=[];if(startDate){let d=new Date(startDate);for(let i=0;i<13;i++){weeks.push(d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}).replace(' ','-'));d.setDate(d.getDate()+7)}}else{for(let i=0;i<13;i++)weeks.push(`Wk${i+1}`)}const blank={Ben:{workWon:new Array(13).fill(0),target}};teamPeople.filter(p=>p!=='Ben').forEach(p=>{blank[p]={billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)}});scorecard[key]=blank;qtrWeeks[key]=weeks;markUnsaved();closeModal('qtr-modal');populateQtrSelect();document.getElementById('sc-qtr').value=key;renderScorecard();showToast(`✓ ${key} created`,'ok')}
+function createQuarter(){const qn=document.getElementById('nq-qtr').value,yr=document.getElementById('nq-yr').value;const key=`${qn}-${yr}`,startDate=document.getElementById('nq-start').value,target=parseFloat(document.getElementById('nq-target').value)||195000;if(scorecard[key]&&Object.keys(scorecard[key]).length>0){showToast(`${key} already exists`,'err');return}let weeks=[];if(startDate){let d=new Date(startDate);for(let i=0;i<13;i++){weeks.push(d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}).replace(' ','-'));d.setDate(d.getDate()+7)}}else{for(let i=0;i<13;i++)weeks.push(`Wk${i+1}`)}const blank={Ben:{workWon:new Array(13).fill(0),target}};teamPeople.filter(p=>p!=='Ben').forEach(p=>{blank[p]={billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)}});scorecard[key]=blank;qtrWeeks[key]=weeks;markUnsaved();closeModal('qtr-modal');populateQtrSelect();document.getElementById('sc-qtr').value=key;renderScorecard();showToast(`✓ ${key} created`,'ok')}
 function openNewPersonModal(){document.getElementById('np-name').value='';document.getElementById('person-modal').classList.add('open')}
 function addPerson(){const name=document.getElementById('np-name').value.trim();if(!name||teamPeople.includes(name)){showToast(name?'Already exists':'Enter a name','err');return}const color=document.getElementById('np-color').value;teamPeople.push(name);teamColors[name]=color;Object.keys(scorecard).forEach(q=>{if(!scorecard[q][name])scorecard[q][name]={billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)}});syncManagerDropdowns();markUnsaved();closeModal('person-modal');showToast(`✓ ${name} added`,'ok');if(document.querySelector('.pg.active')?.id==='page-scorecard')renderScorecard()}
 
