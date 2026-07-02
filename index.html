@@ -753,13 +753,13 @@ td.col-cur .inv-cell.forecast{background:#c0dfef;border-color:#80bcd8}
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <button class="btn btn-s btn-sm" onclick="document.getElementById('fp-iframe').contentWindow.print()">🖨 Print / PDF</button>
-          <button class="btn btn-p btn-sm" onclick="window.open('https://clwconsultinghub-cloud.github.io/clw-hub/fee_proposal.html','_blank')">↗ Open full screen</button>
+          <button class="btn btn-p btn-sm" onclick="window.open('fee_proposal.html','_blank')">↗ Open full screen</button>
         </div>
       </div>
       <div style="flex:1;overflow:hidden;background:#e8eaed;display:flex;flex-direction:column">
         <iframe
           id="fp-iframe"
-          src="https://clwconsultinghub-cloud.github.io/clw-hub/fee_proposal.html"
+          src="fee_proposal.html"
           style="flex:1;width:100%;border:none;min-height:calc(100vh - 60px)"
           title="CLW Fee Proposal Template"
           onload="this.style.opacity=1"
